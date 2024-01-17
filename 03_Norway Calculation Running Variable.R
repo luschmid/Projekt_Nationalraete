@@ -6,7 +6,7 @@ library(tidyverse)
 library(readstata13)
 library(janitor)
 
-try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalräte"))
+try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalr?te"))
 
 #rm(list = ls(all = TRUE))
 source("./03_Code/fine_grid.R") # ggplot layers
@@ -40,7 +40,6 @@ norway_margins <- CalculateMargins(data_norway_prep,
                                    system="closed",
                                    method="SainteLague",
                                    rank="rank",
-                                   margin_type="easiest",
                                    additional_vars=c("partyname",
                                                      "pid",
                                                      "district",
@@ -281,7 +280,7 @@ data.table::fwrite(data_margin_final, file =
 # (our vote margin, easiest, redistribution)
 #--------------------------------------------------
 
-# (i) Method proposed by Lüchinger, Schelker, Schmid (2021)
+# (i) Method proposed by L?chinger, Schelker, Schmid (2021)
 
 df_std <- data.table::fread(
   file = "./02_Processed_data/13_Running_variable/RV_Norway_1953_1981.csv", 
@@ -322,7 +321,7 @@ df_all <- data %>%
 
 cor(df_all %>% select(starts_with("votemargin")))
 
-# (i) Method proposed by Lüchinger, Schelker, Schmid (2021)
+# (i) Method proposed by L?chinger, Schelker, Schmid (2021)
 
 df_std <- data.table::fread(
   file = "./02_Processed_data/13_Running_variable/RV_Norway_1953_1981.csv", 
@@ -389,7 +388,7 @@ cor(df_all %>% select(starts_with("votemargin")))
 #   filter(district=="nordland" & year==1973 & 
 #          partyname=="det norske arbeiderparti")
 # 
-# data_final_norway%>%filter(partyname=="høyre og kristelig folkeparti")
+# data_final_norway%>%filter(partyname=="h?yre og kristelig folkeparti")
 # 
 # Check simulation
 # data_input <- PrepareData(data=data, votes_j_name="votes",

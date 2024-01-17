@@ -17,7 +17,8 @@ options("encoding" = "UTF-8")
 # 
 # Description: PrepareData prepares the data for the later functions 
 #              GetAllianceSuballiance gets information on alliances/suballiances
-#              CollapseVotes gets party votes from the  candidate dataset
+#              CollapseVotes collapses party votes from the  candidate dataset
+#              CollapseVotesCand collapses candidate votes from the  candidate dataset
 #              CalculateRatios calculates Ratios (dHondt numbers) in long format
 #-------------------------------------------------------------------------------
 
@@ -143,6 +144,26 @@ CollapseVotes <- function(data_input, aggregation_level, aggregation_unit = NA){
     group_by(!!aggregation_level) %>%
     summarize(votes_j = sum(votes_j)) %>%
     as.matrix()
+  
+  return(data_out)
+}
+
+
+CollapseVotesCand <-  function(data_input, aggregation_level, aggregation_unit = NA){ 
+  aggregation_level <- enquo(aggregation_level)
+  aggregation_unit <- enquo(aggregation_unit)
+  check_aggregation_level <- names(data_input %>% ungroup() %>% 
+                                     select(!!aggregation_level))
+  if (check_aggregation_level == "suballiance") {
+    data_input <- data_input %>% filter(alliance == !!aggregation_unit)
+  }
+  if (check_aggregation_level == "party") {
+    data_input <- data_input %>% filter(suballiance == !!aggregation_unit)
+  }
+  data_out <- data_input %>%
+    group_by(!!aggregation_level) %>%
+    summarize(votes_h = sum(votes_h)) %>%
+    as.matrix()
   return(data_out)
 }
 
@@ -213,11 +234,8 @@ AppendDataFrames <- function(data_input,parties){
 #                parties
 #-------------------------------------------------------------------------------
 
-PartyMargin <- function(party, data_input, n,method="dHondt",
-                        margin_type="Votes_Added") {
-# margin_type: "Votes_Added" for only adding votes (as in L?chinger, Schelker, 
-#               Schmid 2021), "easiest" for adding or subtracting votes
-#               as in Fiva and Smith (2018)
+PartyMargin <- function(party, data_input, n,method="dHondt") {
+
   party <- enquo(party)
 
   if (method=="dHondt"){
@@ -245,26 +263,14 @@ PartyMargin <- function(party, data_input, n,method="dHondt",
     mutate(seat_merge = n - No_rank + 1) %>%
     select(No, seat_merge,seat) %>%  
     left_join(df_mult, by = c("seat"))
-  
-  if (margin_type=="easiest"){
-    
-    data_out <- data_out  %>%
-      left_join(data_others, by = c("seat_merge")) %>%
-      mutate(mult=pmin(mult.x , mult.y)) %>%
-      mutate(margin = (as.numeric(No.x) - as.numeric(No.y)) * mult) %>%
-      rename(seat=seat.x)%>%
-      select(party, seat, margin)
-  }
-  
-  if (margin_type=="Votes_Added"){
-    
+
     data_out <- data_out  %>%
       left_join(data_others, by = c("seat_merge")) %>%
       mutate(mult=mult.x) %>%
       mutate(margin = (as.numeric(No.x) - as.numeric(No.y)) * mult) %>%
       rename(seat=seat.x)%>%
       select(party, seat, margin)
-  }
+
   return(data_out)
 }
 
@@ -272,7 +278,6 @@ CalculatePartyMargin <- function(party_input,
                                  data_input, 
                                  n,
                                  method="dHondt",
-                                 margin_type="Votes_Added",
                                  treshold="none",
                                  rank="rank") {
   #----------------------------------------------------------------------------
@@ -295,8 +300,7 @@ CalculatePartyMargin <- function(party_input,
   Alliancemargin <- PartyMargin(party=AllianceInformation$alliance, 
                                 data_input=AllianceNumbers, 
                                 n=n,
-                                method=method,
-                                margin_type=margin_type)
+                                method=method)
   colnames(Alliancemargin) <- c("alliance", "seat_a", "margin_a")
   
   # 2. Calculation of margin across suballiances (only for parties in alliance)
@@ -312,8 +316,7 @@ CalculatePartyMargin <- function(party_input,
       Suballiancemargin <- PartyMargin(party=AllianceInformation$suballiance,
                                        data_input= SuballianceNumbers, 
                                        n=i,
-                                       method=method,
-                                       margin_type=margin_type)
+                                       method=method)
       Suballiancemargin$seat_a <- i
       colnames(Suballiancemargin) <- c("suballiance", "seat_s", 
                                        "margin_s", "seat_a")
@@ -331,8 +334,7 @@ CalculatePartyMargin <- function(party_input,
         Partymargin <- PartyMargin(party=party_input, 
                                    data_input=PartyNumbers, 
                                    n=i,
-                                   method=method,
-                                   margin_type=margin_type)
+                                   method=method)
         Partymargin$seat_s <- i
         colnames(Partymargin) <- c("party", "seat_p", "margin_p", "seat_s")
         Partymargin_all <- rbind(Partymargin_all, Partymargin)
@@ -384,14 +386,12 @@ CalculatePartyMargin <- function(party_input,
   return(AllpartymarginsOut)
 }
 
-CalculatePartyMargins <- function(data_input, n,method="dHondt",
-                                  margin_type="Votes_Added") {
+CalculatePartyMargins <- function(data_input, n,method="dHondt") {
   Out <- data.frame()
   all_parties <- as.numeric(levels(as.factor(data_input$party)))
   for (j in 1:length(all_parties)) {
     #no_candidates <- data_input[as.factor(data_input$party)==all_parties[j]]
     Out <- rbind(Out, CalculatePartyMargin(party=all_parties[j], data_input,
-                                           margin_type=margin_type,
                                            n=n,method=method))
   }
   return(Out)
@@ -478,7 +478,6 @@ AggregateMargins <- function(data_input,
                              n,
                              system="open",
                              method="dHondt",
-                             margin_type="Votes_Added",
                              rank="rank",
                              additional_vars="",
                              threshold="none"){
@@ -494,8 +493,7 @@ AggregateMargins <- function(data_input,
   }
   
   PartyMarginOut <- CalculatePartyMargins(data_input=data_input, 
-                                          n=n,method=method,
-                                          margin_type=margin_type)%>% 
+                                          n=n,method=method)%>% 
                     mutate(mergevar = seat,party=as.character(party))
     
   
@@ -514,7 +512,7 @@ AggregateMargins <- function(data_input,
   #       (single-candidate lists)
   MarginsFinal <- MarginsMerged %>%
     group_by(party, rank_h) %>%
-    summarize(votemargin = max(margin_min),candmargin=min(candmargin)) 
+    summarize(votemargin = max(margin_min,na.rm=T),candmargin=min(candmargin,na.rm=T)) 
   # note: maximum of all potential seat configurations
   MarginsFinal <- MarginsFinal %>%
            mutate(votemargin=ifelse(is.na(votemargin)==T,candmargin,votemargin)) 
@@ -538,7 +536,7 @@ AggregateMargins <- function(data_input,
   }
 
   return(MarginsFinal %>% left_join(data_input, by = c("party", "rank_h")) %>% 
-             select(year, party,votemargin)) #, all_of(additional_vars)
+             select(year, party,votemargin,all_of(additional_vars))) 
 }
 
 #-------------------------------------------------------------------------------
@@ -549,26 +547,25 @@ AggregateMargins <- function(data_input,
 #-------------------------------------------------------------------------------
 
 
+
 CalculateMargins <- function(data_input,
                              system="open",
                              method="dHondt",
                              rank="rank", 
                              convcrit=0.001,
-                             margin_type="Votes_Added",
-                             additional_vars="",
+                             additional_vars=c("alliance"),
                              threshold="none",
                              rv_type="analytical",
                              return_option=T,
-                             outfile_name) {
+                             outfile_name,
+                             print_seat=FALSE,
+                             print_party=FALSE) {
   data_singlecandidate <- data_input %>%
     group_by(year, district) %>%
     summarize(nobs = n()) %>%
     filter(nobs == 1)
-  #data_input <- data_input %>%
-   # left_join(data_singlecandidate, by = c("year", "district")) %>%
-    #filter(is.na(nobs) == T) 
-  # note: do calculation only for districts with more than one candidate
-  years <- as.numeric(levels(as.factor(data_input$year)))
+ 
+   years <- as.numeric(levels(as.factor(data_input$year)))
   Out <- data.frame()
   for (yr in years) {
     print(paste("New year:", yr))
@@ -578,14 +575,23 @@ CalculateMargins <- function(data_input,
       print(paste("New district:", di))
       dataworking <- dataperyear[dataperyear$district == di, ]
       n <- sum(dataworking$elected)
-      if (rv_type=="analytical"){
+      if (rv_type=="analytical" & method %in% c("dHondt","SainteLague")){
       Out <- rbind(Out, as.data.frame(AggregateMargins(dataworking, 
                                               n,system=system,
                                               method=method,
                                               rank=rank,
-                                              margin_type=margin_type,
                                               threshold=threshold,
                                               additional_vars=additional_vars)))
+      }
+      
+      if (rv_type=="analytical" & method %in% c("Hare")){
+        Out <- rbind(Out, as.data.frame(AggregateMarginsLargestRemainder(data_input=dataworking, 
+                                                                         no_seats=n,
+                                                                         system=system,
+                                                                         method=method,
+                                                                         rank=rank,
+                                                                         threshold=threshold,
+                                                                         additional_vars=additional_vars)))
       }
       
       if (rv_type=="simulation"){
@@ -595,9 +601,10 @@ CalculateMargins <- function(data_input,
                                                                  method=method,
                                                                  rank = rank,
                                                                  convcrit=convcrit,
-                                                                 margin_type=margin_type,
                                                                  threshold=threshold,
-                                                                 additional_vars=additional_vars))
+                                                                 additional_vars=additional_vars,
+                                                                 print_seat=print_seat,
+                                                                 print_party=print_party))
 
         if (return_option==T){Out <- rbind(Out,out_temp)
         } else{
@@ -637,6 +644,24 @@ if (threshold=="spain_2004_2019"){
     
 
 }
+if (threshold=="israel_2009_2013"){
+  
+  data_input_out <- data_input %>%
+    mutate(votes_j_rel=votes_j/total_valid_votes)%>% 
+    filter(votes_j_rel>=0.02) %>%
+    select(-votes_j_rel)
+  
+  
+}
+  
+if (threshold=="israel_2014_2022"){
+    
+    data_input_out <- data_input %>%
+      mutate(votes_j_rel=votes_j/total_valid_votes)%>% 
+      filter(votes_j_rel>=0.03) %>%
+      select(-votes_j_rel)
+    
+}
     
     return(data_input_out)
   
@@ -660,17 +685,17 @@ GetSeatsHighestAverage <- function(party_input,
   #-----------------------------------------------------------------------------
   #n <- sum(data_input$elected)
   
-  quorum=T
+  quorum=TRUE # set quorum to true as default
   
   if (threshold!="none"){
   data_input <- CutDataByQuorum(data_input,threshold)
   quorum <- is.element(party_input,levels(as.factor(data_input$party)))
   
-  if (quorum==F){ out <- 0  # calculation only for parties who made quorum
+  if (quorum==FALSE){ out <- 0  # calculation only for parties who made quorum
   }
   }
   
-  if (quorum!=F | threshold=="none"){
+  if (quorum!=FALSE | threshold=="none"){
   
   AllianceInformation <- GetAllianceSuballiance(party_input, data_input) 
   # 1. Calculation of number of seats across alliances
@@ -696,13 +721,13 @@ GetSeatsHighestAverage <- function(party_input,
                          n= AllianceSeats$seats_alliance[AllianceSeats$alliance==AllianceInformation$alliance],
                          method=method) %>% 
       mutate(No_rank = row_number(-as.numeric(No))) %>%
-      filter(No_rank <= n) %>%
+      filter(No_rank <= AllianceSeats$seats_alliance[AllianceSeats$alliance==AllianceInformation$alliance]) %>%
       group_by(party) %>%
       summarize(seats_suballiance=n())%>%
       rename(suballiance=party)
     
-    out <- max(SuabllianceSeats$seats_alliance[SuballianceSeats$suballiance==
-                                          SuballianceInformation$suballiance],0)
+    out <- max(SuballianceSeats$seats_suballiance[SuballianceSeats$suballiance==
+                                                 AllianceInformation$suballiance],0)
 
     # 3. Calculation of margin across parties (only for parties in suballiance)
     if (AllianceInformation$alliance_dummy == 1 & 
@@ -710,9 +735,9 @@ GetSeatsHighestAverage <- function(party_input,
       VotesParty <- CollapseVotes(data_input, aggregation_level = party, 
                              aggregation_unit = AllianceInformation$suballiance)
       PartySeats <- CalculateRatios(votes=VotesParty, 
-                                    n=n,method=method) %>% 
+                                    n=SuballianceSeats$seats_suballiance[SuballianceSeats$suballiance==AllianceInformation$suballiance],method=method) %>% 
         mutate(No_rank = row_number(-as.numeric(No))) %>%
-        filter(No_rank <= n) %>%
+        filter(No_rank <= SuballianceSeats$seats_suballiance[SuballianceSeats$suballiance==AllianceInformation$suballiance]) %>%
         group_by(party) %>%
         summarize(seats_party=n())
       out <- max(PartySeats$seats_party[PartySeats$party==party_input],0)  
@@ -729,10 +754,10 @@ years_all <- levels(as.factor(as.character(data_input$year)))
 print(paste0("Years: ", paste0(years_all,collapse=", ")))
 for (yr in years_all) {
 df1 <- data_input[data_input$year==yr,]
-districts_all <- levels(as.factor(as.character(df1$districtid)))
+districts_all <- levels(as.factor(as.character(df1$district)))
 #print(districts_all)
 for (district in districts_all) {
-df2 <- df1[df1$districtid==district,]
+df2 <- df1[df1$district==district,]
 parties_all <- levels(as.factor(as.character(df2$party)))
 #print(parties_all)
 for (party in parties_all) {
@@ -749,20 +774,130 @@ df_out <- rbind(df_out,data.frame(year=yr,
 return(df_out)
 }
 
+
+
+
+GetSeatsIsrael <- function(party_input, 
+                                   data_input, 
+                                   n,
+                                   method,
+                                   threshold="none") {
+  #----------------------------------------------------------------------------
+  # This function calculates the number of seats for a party using the seat 
+  # distribution method for Israel 2009-2023. 
+  # Input: party_input: choice of party
+  #        data_input:  votes data with columns party, alliance, suballiance, 
+  #                     votes
+  #        n:           number of seats in a district
+  #        method:      allocation method
+  #        threshold:   threshold for parties to be considered
+  #-----------------------------------------------------------------------------
+  #n <- sum(data_input$elected)
+  
+  quorum=TRUE # set quorum to true as default
+  
+
+  
+  if (threshold!="none"){
+    data_input <- CutDataByQuorum(data_input,threshold)
+    quorum <- is.element(party_input,levels(as.factor(data_input$party)))
+    
+    if (quorum==FALSE){ out <- 0  # calculation only for parties who made quorum
+    }
+  }
+  
+  if (quorum!=FALSE | threshold=="none"){
+    
+    AllianceInformation <- GetAllianceSuballiance(party_input, data_input) 
+    
+    # 1. Calculation of number of seats according to first round of Hare system
+    
+    VotesParty <- CollapseVotes(data_input, aggregation_level = list_name) %>%
+      as_tibble() %>%
+      mutate(votes_j=as.numeric(votes_j))
+    
+    df_party_names <- data_input %>% distinct(list_name,party)
+    
+    Seats_Round1 <- GetIntegerHare(VotesParty$votes_j,sum(data_input$elected))
+    
+    df_seats_round1 <- tibble(seats_round1=as.numeric(Seats_Round1),
+                              list_name=VotesParty$list_name)
+    
+    RemSeats <- as.numeric(sum(data_input$elected)-sum(Seats_Round1))
+    
+    
+    # 2. Distribute seats to alliances using dHondt method
+    
+    data_input <- data_input %>% 
+      left_join(df_seats_round1,by=c("list_name"))
+    
+    data_input_seats <- data_input %>% 
+      group_by(list_name) %>%
+      summarize(seats_round1=first(seats_round1),
+                alliance=first(alliance)) %>% 
+      group_by(alliance) %>%
+      summarize(seats_round1=sum(seats_round1))
+      
+    
+    VotesAlliance <- CollapseVotes(data_input, aggregation_level = alliance) %>% # continue here 
+      as_tibble() %>%
+      mutate(votes_l=as.numeric(votes_j)) %>%
+      left_join(data_input_seats,by=c("alliance")) %>%
+      mutate(HA_seat_l=0) %>%
+      select(-votes_j)
+    
+    for (s in 1:RemSeats){
+    VotesAlliance <- VotesAlliance %>%
+        mutate(indic_l=votes_l/(seats_round1+1+HA_seat_l))%>%
+        mutate(rank = dense_rank(as.numeric(-indic_l))) %>%
+        mutate(HA_seat_l=ifelse(rank==1,HA_seat_l+1,HA_seat_l))
+
+    }
+    
+    # 3. Distribute alliances seats from step 2 to parties using dHondt method
+    
+    data_input_seats <- data_input %>% 
+      group_by(list_name) %>%
+      summarize(seats_round1=first(seats_round1),
+                alliance=first(alliance),
+                votes_j=first(votes_j)) %>%
+      left_join(VotesAlliance %>% select(HA_seat_l,alliance),by=c("alliance"))%>%
+      mutate(HA_seat_j=0) %>%
+      ungroup() %>%
+      arrange(alliance,list_name)
+    
+    HA_seat_l_max <- max(data_input_seats$HA_seat_l)
+    
+    for (s in 1:HA_seat_l_max){
+      data_input_seats <- data_input_seats %>%
+        mutate(indic_j=votes_j/(seats_round1+1+HA_seat_j))%>%
+        group_by(alliance) %>%
+        mutate(rank = dense_rank(as.numeric(-indic_j))) %>%
+        mutate(HA_seat_j=ifelse(rank==1 & HA_seat_l>=s,HA_seat_j+1,HA_seat_j)) %>%
+        ungroup()
+      
+    }
+    
+    out <- data_input_seats %>% 
+      mutate(seats=seats_round1+HA_seat_j) %>% 
+      select(list_name,seats) %>%
+      left_join(df_party_names,by=c("list_name"))
+    out <- out %>% filter(party==party_input) %>% select(seats) %>% pull()
+  }   
+  
+  return(out)
+}
+
+
 #-------------------------------------------------------------------------------
 # (G) Simulate vote margin
 # 
 # Description: GetMinVotesQuorum calculates the minimum number of party votes required
 #                   for party j to achieve a seat in systems with a quorum
-#             GetRVSimulation_Candidate calculates the vote margin for all
-#                candidates in a district using a simulation that adds votes 
-#                until the respective candidate is elected
-#              GetRVSimulation_Candidate_Redistribution  
-#                calculates the vote margin for all candidates in a district 
-#                using a simulation that redistributes party votes from a party
-#                until the respective candidate is elected
-#               GetRVSimulation_Candidate_Loop calculates simulated vote margin
-#                for multiple years and districts
+#              GetRVSimulation_Candidate calculates the vote margin for all
+#                parties and candidates in a district using a simulation that 
+#                adds votes  until the respective candidate is elected
+#              GetRVSimulation_Candidate_Loop: calls GetRVSimulation_Candidate
 #-------------------------------------------------------------------------------
 
 GetMinVotesQuorum <- function(threshold,data_input,party_j){
@@ -788,7 +923,9 @@ GetRVSimulation_Candidate <- function(data_input,
                                       convcrit=0.001,
                                       method="dHondt",
                                       system="open",
-                                      threshold="none") {
+                                      threshold="none",
+                                      print_party=FALSE,
+                                      print_seat=FALSE) {
   #---------------------------------------------------------------------------
   # data_input: data after PrepareData with votes_j as party votes and votes_h 
   #             as candidate votes
@@ -801,14 +938,14 @@ GetRVSimulation_Candidate <- function(data_input,
   out <- data.frame()
   if (system=="closed"){
   parties_all <- levels(as.factor(data_input$party))
-    
   for (j in parties_all) {
+    if (print_party==TRUE){print(paste0("Party: ", j))}
     
     for (i in 1:n) {
-  
+    if (print_seat==TRUE){ print(paste0("Seat: ", i))}
       
       votessim <- GetVotesRequieredClosedList(data_input=data_input,
-                                    seat=i,
+                                    i=i,
                                     j=j,
                                     n=n,
                                     convcrit=convcrit,
@@ -829,12 +966,10 @@ GetRVSimulation_Candidate <- function(data_input,
     
     for (j in parties_all) {
       ids_all <- levels(as.factor(data_input$id_cand[data_input$party==j]))
-      print(paste0("Party: ",j))
+      if (print_party==TRUE){print(paste0("Party:", j))}
       
       for (i in ids_all) {
-      print(paste0("ID: ",i))
-        
-        #print(paste("Party: ",j))
+      #print(paste0("ID: ",i))
         
         votessim <- GetVotesRequieredOpenList(data_input=data_input,
                                       i=i,
@@ -859,6 +994,8 @@ GetRVSimulation_Candidate <- function(data_input,
 GetVotesRequieredClosedList <- function(data_input,
                               j,
                               n,
+                              i,
+                              method,
                               threshold,
                               convcrit=0.001){
   
@@ -869,19 +1006,30 @@ GetVotesRequieredClosedList <- function(data_input,
       votessim <- votessim * 2
       data_input$votes_j[data_input$party==j] <- 
         votessim
-      if (method=="SainteLague" | method=="dHondt"){
+      if (method=="SainteLague" | method=="dHondt" ){
         seats <- GetSeatsHighestAverage(party_input=j,
                                         data_input=data_input, 
                                         n=n,
                                         method=method,
                                         threshold=threshold)
       }
-    }
+      if (method=="Israel"){
+      seats <- GetSeatsIsrael(party_input=j,
+                                        data_input=data_input, 
+                                        n=n,
+                                        method=method,
+                                        threshold=threshold)  
+        
+      #print(seats)
+      #print(votessim)
+      }
+      }
+    
     xlow <- votessim / 2
     xhigh <- votessim
     
 
-    while ((xhigh - xlow) > convcrit & i_new<10) {
+    while ((xhigh - xlow) > convcrit ) { #& i_new<10
       votessim <- (xlow + xhigh) / 2
       
       data_input$votes_j[data_input$party==j] <- 
@@ -892,6 +1040,14 @@ GetVotesRequieredClosedList <- function(data_input,
                                         n=n,
                                         method=method,
                                         threshold=threshold)
+      }
+      if (method=="Israel"){
+        seats <- GetSeatsIsrael(party_input=j,
+                                data_input=data_input, 
+                                n=n,
+                                method=method,
+                                threshold=threshold)  
+        
       }
       if (seats < i) {
         xlow <- votessim
@@ -931,6 +1087,15 @@ GetVotesRequieredOpenList <- function(data_input,
                                       n=n,
                                       method=method,
                                       threshold=threshold)
+      
+    }
+    
+    if (method=="Hare"){ #continue here
+      seats <- GetSeatsHare(party_input=j,
+                            data_input=data_input,
+                            n=n,
+                            method=method,
+                            threshold=threshold)
       
     }
     data_input_party <- data_input[data_input$party==j,]
@@ -979,7 +1144,8 @@ GetRVSimulation_Candidate_Loop <- function(data_input,
                                       threshold="none",
                                       rank="rank",
                                       additional_vars,
-                                      margin_type="Votes_Added") {  
+                                      print_seat=FALSE,
+                                      print_party=FALSE) {  
   #---------------------------------------------------------------------------
   # data_input: data after PrepareData with votes_j as party votes and votes_h 
   #             as candidate votes
@@ -987,22 +1153,19 @@ GetRVSimulation_Candidate_Loop <- function(data_input,
   # convcrit:   convergence criterion
   # method:     method to distribute seats
   # system:     close-list or open-list
-  # type:       "Party_redistribution" if redistribution of party votes 
-  #             "Votes_Added" if votes are added (our standard case)
-  #             "Votes_Subtracted_Or_Added" for easiest ways as in 
-  #             Fiva & Smith (2018)
   #---------------------------------------------------------------------------  
   df_out <- data.frame()
   data_input$seat <- data_input[[rank]]
   
-      if (margin_type== "Votes_Added"){
       df_out <- rbind(df_out, GetRVSimulation_Candidate(data_input=data_input, 
                                                           n=sum(data_input$elected), 
                                                           convcrit=convcrit,
                                                           method=method,
                                                           system=system,
-                                                          threshold=threshold))
-      }
+                                                          threshold=threshold,
+                                                          print_seat=print_seat,
+                                                          print_party=print_party))
+
   
   if (system=="open"){
     df_out <- df_out %>%
@@ -1023,35 +1186,6 @@ GetRVSimulation_Candidate_Loop <- function(data_input,
          )
 }
 
-#---------------
-# Rep package PA
-#---------------
-
-
-library(readstata13)
-path <- "C:/Schmidlu/Dropbox/Projekt Nationalräte"
-
-data_all <- read.dta13(paste0(path,"./05_Texts_and_presns/01_Running_variable/submissions/17 pol analysis final/replication package/data_switzerland.dta")) %>%
-  as_tibble() %>%
-  mutate(pvotes=ifelse(is.na(pvotes)==F,pvotes,votes))  # replace party votes for single-party candidates (e.g. Beat Graf, AI 1987)
-
-data_prepared_1931_2015 <- PrepareData(data_all,  
-                                       votes_h_name="votes", 
-                                       votes_j_name= "pvotes",
-                                       alliance_name="alliance",
-                                       suballiance_name="suballiance", 
-                                       party_name="list", 
-                                       districtname="canton", 
-                                       election_cyclename = "year",
-                                       system="open",
-                                       cand_id_name="id",
-                                       alliances=TRUE) %>% 
-  filter(is.na(votes_h) == F) # Note: filter out tacit elections
-
-start_time <- Sys.time()
-RV_out <- CalculateMargins(data_prepared_1931_2015)
-end_time <- Sys.time()
-end_time - start_time
 
 
 #-----------------------

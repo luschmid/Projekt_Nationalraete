@@ -3,13 +3,13 @@ library(readstata13)
 library(data.table)
 library(tidyverse)
 
-try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalr‰te"))
-try(setwd("C:/Dropbox/Dropbox/Projekt Nationalr‰te")) 
+try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalr√§te"))
 
 #rm(list = ls())
 
 # (i) Read-in data
 
+data <- read_dta("./01_Raw_data/Electoral data/Honduras/elections_hn_fuzzy_merge_final.dta")
 
 MatchingHondurasAll <-readstata13::read.dta13("./02_Processed_data/15_Elections_Honduras/elections_hn_final.dta")%>% 
                       mutate(Partyname=Party)%>% 
@@ -54,57 +54,6 @@ MatchingHondurasAll %>% filter(district=="ATLANTIDA" & year==2009)%>% arrange(Pa
 # Scale up to all years, districts, parties, and candidates
 
 
-CalculateCandidateMargins <- function(data_input) {
-  party_inputs <- as.numeric(levels(as.factor(data_input$party)))
-  ncand <- dim(data_input)[1]
-  out_all <- data.frame()
-  for (j in 1:length(party_inputs)) {
-    out_all <- rbind(CalculateCandidateMargin(data_input = data_input, 
-                                              party_input = party_inputs[j]), out_all)
-  }
-  return(out_all)
-}
-
-
-AggregateMarginsLargestRemainder <- function(data_input, no_seats) {
-  data_input$party_name <- data_input$party
-  data_input$party <- as.numeric(as.factor(data_input$party_name))
-  # (i) Aggregate party votes
-  if (any(colnames(data_input) == "votes")==F){ # a) calculate party votes as sum of individual votes if party votes are not present
-    data_inputparty <- data_input %>% 
-      group_by(district,year,party) %>%
-      summarize(votes=sum(votes_h)) 
-    data_input <- data_input %>% left_join(data_inputparty,by=c("district","year","party")) %>%
-                                  group_by(district,year,party)  %>%
-                                  mutate(rank_h_inv = dense_rank(as.numeric(votes_h))) %>%
-                                  mutate(rank_h_inv_max = max(rank_h_inv)) %>%
-                                  mutate(rank_h = rank_h_inv_max - rank_h_inv + 1)
-  }  else { # b) calculate party votes as mean of party votes if party votes are present
-  data_inputparty <- data_input %>% 
-      group_by(district,year,party) %>%
-      summarize(votes=mean(votes)) 
-  data_input <- data_input %>%  group_by(district,year,party)  %>%
-                                mutate(rank_h_inv = dense_rank(as.numeric(votes_h))) %>%
-                                mutate(rank_h_inv_max = max(rank_h_inv)) %>%
-                                mutate(rank_h = rank_h_inv_max - rank_h_inv + 1)  
-  }
-  # (ii) Calculate party and candidate margin
-  PartyMarginOut <- GetVSHare(data_inputparty$votes, no_seats) %>% mutate(mergevar = seat) %>% 
-                              rename(partymargin=VS) # temp: either VS or partymargin
-  CandidateMarginsOut <- CalculateCandidateMargins(data_input) %>% 
-                              mutate(mergevar = ifelse(rank_h < rank_h_compare, rank_h_compare - 1, rank_h_compare))
-  # (iii) Aggregate party and candidate margin
-  MarginsMerged <- CandidateMarginsOut %>%
-    left_join(PartyMarginOut, by = c("party", "mergevar")) %>%
-    mutate(margin_min = ifelse(is.na(candmargin) == F, pmin(candmargin, partymargin),partymargin)) # minimum of candidate and partymargin for all canidates for whom both are available, partymargin for those with no candidate margin (single-candidate lists)
-  MarginsFinal <- MarginsMerged %>%
-    group_by(party, rank_h) %>%
-    summarize(votemargin = max(margin_min),candmargin=min(candmargin)) # maximum of all potential seat configurations
-  #PartyMargintoMerge <- MarginsMerged %>% filter(rank_h == seat)
-  return(MarginsFinal %>% left_join(data_input, by = c("party", "rank_h")) %>% 
-           select(-rank_h_inv,-rank_h_inv_max ))
-}
-
 
 CalculateMargins <- function(data_input, data_input_seats) {
   data_year_district <- data_input %>%
@@ -121,7 +70,7 @@ CalculateMargins <- function(data_input, data_input_seats) {
       Out <- rbind(Out, as.data.frame(AggregateMarginsLargestRemainder(data_input=dataworking, no_seats=no_seats)))
     }
   return(Out)
-} 
+}
 
 # test functions
 CalculateCandidateMargins(MatchingHonduras_ATL_2009_PN)

@@ -8,7 +8,7 @@ library(janitor)
 library(scales)
 library(reprex)
 
-try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalräte"))
+try(setwd("C:/Schmidlu/Dropbox/Projekt Nationalr?te"))
 
 # 2. Read in data on Norway 
 
@@ -41,7 +41,6 @@ ggplot(data, aes( votemargin_vote,fill=factor(fiva_smith_sample))) +
   geom_vline(xintercept = 0) +
   ylab("") + xlab("")+
   theme(axis.text.y = element_text(angle = 0)) +
-
   theme(legend.position=c(0.78,0.87),
         legend.key.size = unit(3, 'lines')) +
   theme(legend.title = element_blank(),
