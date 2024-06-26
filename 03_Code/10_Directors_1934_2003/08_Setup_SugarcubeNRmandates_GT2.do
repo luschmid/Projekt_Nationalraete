@@ -1474,12 +1474,14 @@ sort NRid
 save "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\uniqueNR_ID_GT2.dta", replace
 
 
-*** Merge NR Mandates with RL-Sugarcube output after (FP/FN) post-processing
+**** Merge NR Mandates with RL-Sugarcube output after (FP/FN) post-processing
+*** Sugarcube firm-links after post-processing
 
-** Sugarcube firm-links after post-processing
+** Correction of coding errors for some NRid's ("297 errors")  -- > affects only manual coding of links between RL & GT2
+do "$path\03_Code\10_Directors_1934_2003\08a_Setup_SugarcubeNRmandates_GT2_corrections_297.do"
 
+** Take RL output and prepare for merge with GT2
 * merge on NRid year firmname
-
 use "$path\02_Processed_data\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", clear 
 
 drop firmname // this is "old" normalization of firmnames in firmname-cleaning process.
@@ -1590,8 +1592,16 @@ sort year NRid firm_orig source
 export excel using "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\RL_GT2_merge2_coding.xlsx", first(var) replace
 */
 
-* import manually coded RL-GT2 data
+* import manually coded RL-GT2 data from first round with erroneous codings for some NRid's (before setup file: 08a_Setup_SugarcubeNRmandate_GT2_corrections297.do)
 import excel "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\RL_GT2_merge2_coding_in.xlsx", firstrow clear
+
+*identify observations (NRid year combinations) affected by "297-error"
+merge m:1 NRid year using "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\NRid_297.dta"
+drop if _merge == 3 // drop all the codings from the inaccurate first coding of the 297 erroneous obs
+drop _merge
+
+append using "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\RL_GT2_merge2_coding297_in.dta"  // corrected codings of these NRid's
+
 
 /* -- > there are non-AG in GT2
 Procedure: 
@@ -1751,7 +1761,7 @@ duplicates drop NRid year, force  // the dataset contains multiple entries for N
 // merge NR names to GT2_tmp
 merge 1:m NRid year using "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\GT2_tmp.dta"
 
-// some firmn names appear in inital GT2, but not in final GT2 (they were sorted out): check 712 entries that were judged not to contain AGs
+// some firm names appear in inital GT2, but not in final GT2 (they were sorted out): check 712 entries that were judged not to contain AGs
 preserve
 keep if _merge == 1
 /*
@@ -1794,10 +1804,10 @@ append using "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates
 drop if Year == 1995 // 1995 data is missing in NR Verzeichnisse
 tab Source
 
-save "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\tmpRLGT2.dta", replace
+*save "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\tmpRLGT2.dta", replace
 
 * introduce full office year information
-use "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\tmpRLGT2.dta", clear
+*use "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\tmpRLGT2.dta", clear
 merge m:1 NRid Year using "$path\02_Processed_data\02_Elections_1971_2015\OfficeYears_GT2.dta"  // keep only observations during entire office years
 keep if _merge == 3
 drop _merge
@@ -1834,4 +1844,5 @@ erase "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\RL
 erase "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\NR_ID_GT2_tmp.dta"
 erase "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\GT2_tmp.dta"
 
-
+erase "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\RL_GT2_merge2_coding297_in.dta"
+erase "$path\02_Processed_data\10_Directors_1934_2003\11_Elected_Mandates_GT2\NRid_297.dta"

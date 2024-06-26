@@ -75,6 +75,28 @@ FigureOutRound2 <- function(input,filename){
 }
 
 
+FigureOutRound2_Means <- function(input,filename){
+outfiles <-  paste0("\\includegraphics[scale=0.45]{figures/",input[1],"_ob.pdf} & \\includegraphics[scale=0.45]{figures/",input[1],"_hb.pdf}  \\\\")
+for (i in c(2:length(input))){
+outfiles <- paste0(outfiles, 
+                  "\\includegraphics[scale=0.45]{figures/",input[i],"_ob.pdf} & \\includegraphics[scale=0.45]{figures/",input[i],"_hb.pdf}  \\\\")
+}  
+  
+out <- paste0("
+\\begin{figure}[!ht]
+\\begin{center}
+\\caption{}
+\\vspace{0.5em}
+\\begin{tabular}{cccc}",
+outfiles,
+"\\end{tabular}
+\\end{center}
+\\end{figure}
+\\clearpage")
+return(cat(out,file=filename, append=FALSE))
+}
+
+
 # B) Round 1: Loop over all files
 # Note: Discussed by Mark, Simon, and Lukas on June 24, 2024 in Lucerne. 
 
@@ -117,6 +139,17 @@ try(file.remove("out_round2.txt"))
 for (f in loop_files){
   FigureOutRound2(input=f,file="out_round2.txt")
 }
+
+
+# D) Round 2: Mean comparison of samples
+
+
+var <- c("year","birthyear","canton_lrg","leftist","centrist","rightist")
+loop_files <- paste("fig_mean_i_lrg_c1",var,sep="_")
+
+FigureOutRound2_Means(input=loop_files[1:3],filename="out_round2_mean_comparison1.txt")
+FigureOutRound2_Means(input=loop_files[4:6],filename="out_round2_mean_comparison2.txt")
+
 
 
 
