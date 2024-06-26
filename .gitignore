@@ -1,0 +1,9 @@
+# ignore all files
+*
+# except the following files
+!*.R
+!*.do
+!.gitignore
+# and do no ignore files ending with slash = directories
+!*/
+.Rproj.user
