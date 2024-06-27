@@ -314,46 +314,70 @@ foreach k in tri uni epa {
 * (ii) Explore sample composition between optimal and half-optimal bandwidth
 
 use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+
+* a) Drop those with missing vote margin
 keep if votemargin_rel < .
+
+* b) Generate variable for first election and votemargin left/right
 
 bysort ID: egen min_yr=min(year)
 g first_yr = 0
 replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+gen votemargin_rel_l=(1-elected)*votemargin_rel
+gen votemargin_rel_r=elected*votemargin_rel
+
+* c) Set up matrices
 
 mat coef_rb_ob = J(1,20,.)
 mat CI_rb_ob = J(2,20,.)
 mat coef_rb_hb = J(1,20,.)
 mat CI_rb_hb = J(2,20,.)
 
+* d) Loop over all outcome variables
+
 local outcome i_lrg_c1
 local i 1
 foreach var of varlist `outcome'_L4 `outcome'_L3 `outcome'_L2 `outcome'_L1 ///
 		`outcome' `outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4 ///
-		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {	
+		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
+			
+* d1) Optimal bandwidth estimation			
 	
 rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(tri) vce(cluster ID_num) all rho(1)
-* Bandwidth
 local bw_opt = e(h_l)
 local bw_half = `bw_opt'/2
 
-* Mark sample
+* d2) Mark sample
+
+*gen s_`var'_ob=0
+*replace s_`var'_ob=1 if inrange(votemargin_rel,- `bw_opt', `bw_opt') & `var'!=.
 
 gen s_`var'_ob=0
-replace s_`var'_ob=1 if inrange(votemargin_rel,- `bw_opt', `bw_opt')
+replace s_`var'_ob=1-abs(votemargin_rel/`bw_opt') if inrange(votemargin_rel,-`bw_opt', `bw_opt') & `var'!=.
 
-* Out
+
+
+* d3) Results to matrices 
+
 mat coef_rb_ob[1,`i']=e(tau_bc)
 mat CI_rb_ob[1,`i'] = e(ci_l_rb)
 mat CI_rb_ob[2,`i'] = e(ci_r_rb)
 
+
+* d4) Halfoptimal bandwidth
+
 rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(tri) vce(cluster ID_num) all rho(1) h(`bw_half')
 			
-* Mark sample
+* d4) Mark sample
+
+*gen s_`var'_hb=0
+*replace s_`var'_hb=1 if inrange(votemargin_rel,- `bw_half', `bw_half') & `var'!=.
 
 gen s_`var'_hb=0
-replace s_`var'_hb=1 if inrange(votemargin_rel,- `bw_half', `bw_half')
+replace s_`var'_hb=1-abs(votemargin_rel/`bw_half') if inrange(votemargin_rel,-`bw_half', `bw_half') & `var'!=.
 
 * Out
 mat coef_rb_hb[1,`i']=e(tau_bc)
@@ -390,7 +414,7 @@ coefplot matrix(coef_rb_hb), ci(CI_rb_hb) vertical nolabel yline(0) ///
 		title("`outcome'" "Robust, optimal bandwidth, 1st order polynomial, tri, 1st election")
 
 preserve
-keep year list* birthyear sex canton votemargin_rel s_*
+keep year list* birthyear sex canton votemargin_rel s_* ID_num `outcome'*
 save "$path\02_Processed_data\20_Analysis\sample_composition_`outcome'.dta", replace
 restore
 
@@ -403,15 +427,15 @@ use "$path\02_Processed_data\20_Analysis\sample_composition_i_lrg_c1.dta", clear
 
 * a) Recode variables
 
-gen leftist=0
+gen leftist=0 if year>=1971
 replace leftist=1 if listname_bfs=="SP/PS" | listname_bfs=="GPS/PES" | ///
 	 listname_bfs=="PdA/PST"
 
-gen centrist=0
+gen centrist=0 if year>=1971
 replace centrist=1 if listname_bfs=="CVP/PDC" | listname_bfs=="FDP/PLR (PRD)" | ///
 	 listname_bfs=="LPS/PLS"
 
-gen rightist=0
+gen rightist=0 if year>=1971
 replace rightist=1 if listname_bfs=="SVP/UDC" | listname_bfs=="Rep./Rép."  | /// 
 	listname_bfs=="Lega"  | listname_bfs=="FPS/PSL" | listname_bfs=="MCR"
 	
@@ -420,7 +444,6 @@ replace canton_lrg=1 if canton=="BE" | canton=="VD"  | canton=="ZH"
 
 
 * b) Loop through outcome variables and check means of covariates
-
 
 
 local outcome i_lrg_c1
@@ -432,28 +455,25 @@ mat mean_hb = J(1,20,.)
 mat ci_hb = J(2,20,.)
 di "variable: `outcome'"
 local i 1
-foreach var in s_`outcome'_L4 s_`outcome'_L3 s_`outcome'_L2 s_`outcome'_L1 ///
-		s_`outcome' s_`outcome'_F1 s_`outcome'_F2 s_`outcome'_F3 s_`outcome'_F4 ///
-		s_`outcome'_F5 s_`outcome'_F6 s_`outcome'_F7 s_`outcome'_F8 {
+foreach var in `outcome'_L4 `outcome'_L3 `outcome'_L2 `outcome'_L1 ///
+		`outcome' `outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4 ///
+		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
 di "variable: `var'"
-sum  `covar'  if `var'_ob==1
-mat mean_ob[1,`i']=r(mean)
-mat ci_ob[1,`i'] =r(N)
 
-mat ci_ob[1,`i'] =r(mean)-1.96*sqrt(r(sd)^2/r(N))
-mat ci_ob[2,`i'] =r(mean)+1.96*sqrt(r(sd)^2/r(N))
+reg  `var' [aweight=s_`var'_ob] , vce(cluster ID_num)
 
-sum `covar'  if `var'_hb==1 
-mat mean_hb[1,`i']=r(mean)
-mat ci_hb[1,`i'] =r(mean)-1.96*sqrt(r(sd)^2/r(N))
-mat ci_hb[2,`i'] =r(mean)+1.96*sqrt(r(sd)^2/r(N))
+mat mean_ob[1,`i']=_b[_cons]
+local ser =_se[_cons]
+mat ci_ob[1,`i'] =mean_ob[1,`i']-1.96*`ser'
+mat ci_ob[2,`i'] =mean_ob[1,`i']+1.96*`ser'
 
-*sum year birthyear sex leftist centrist rightist canton_lrg if `var'_ob==1
-*sum year birthyear sex leftist centrist rightist canton_lrg if `var'_hb==1 
-*tab listname_bfs if `var'_ob==1
-*tab listname_bfs if `var'_hb==1 
-*tab canton if `var'_ob==1
-*tab canton if `var'_hb==1 	
+reg  `var' [aweight=s_`var'_hb] , vce(cluster ID_num)
+
+mat mean_hb[1,`i']=_b[_cons]
+local ser =_se[_cons]
+mat ci_hb[1,`i'] =mean_hb[1,`i']-1.96*`ser'
+mat ci_hb[2,`i'] =mean_hb[1,`i']+1.96*`ser'
+
 local ++i
 }
 
@@ -491,11 +511,94 @@ clear matrix
 }
 
 ***********************************************************************
-* B) Estimation of treatment effect over time using rdrobust package
+* B) Estimation of treatment effect over time using regression function
 ***********************************************************************
 
 * Note: These results are in the files results_round_1 and results_round2 in the
 *		following dropbox folder: Projekt Nationalräte\04_Results\04_Political_Rents
 
+
 use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+
+* a) Drop those with missing vote margin
 keep if votemargin_rel < .
+
+* b) Generate variable for first election and votemargin left/right
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+gen votemargin_rel_l=(1-elected)*votemargin_rel
+gen votemargin_rel_r=elected*votemargin_rel
+
+*drop if votemargin_rel==0
+replace elected=1 if votemargin_rel==0
+
+* c) Set up matrices
+
+	mat coef_rb_ob = J(1,20,.)
+	mat CI_rb_ob = J(2,20,.)
+	mat coef_rb_hb = J(1,20,.)
+	mat CI_rb_hb = J(2,20,.)
+	mat coef_rg_ob = J(1,20,.)
+	mat CI_rg_ob = J(2,20,.)
+	mat coef_rg_hb = J(1,20,.)
+	mat CI_rg_hb = J(2,20,.)
+
+	* d) Loop over all outcome variables
+
+	local outcome i_lrg_c1
+	local k tri
+	local i 1
+	foreach var of varlist `outcome' {
+				
+	* d1) Optimal bandwidth estimation			
+		
+	rdrobust `var' votemargin_rel , p(1) bwselect(mserd) ///
+				kernel(`k') all rho(1) vce(hc2) 
+	local bw_opt = e(h_l)
+	di `bw_opt'
+	*local bw_half = `bw_opt'/2
+
+	* d3) Results to matrices 
+
+	mat coef_rb_ob[1,`i']=e(tau_bc)
+	mat CI_rb_ob[1,`i'] = e(ci_l_rb)
+	mat CI_rb_ob[2,`i'] = e(ci_r_rb)
+
+	* d4) Implement regression version
+
+	gen weight_ob=1-abs(votemargin_rel/`bw_opt') if inrange(votemargin_rel,-`bw_opt', `bw_opt')
+
+	reg  `var' elected votemargin_rel_l votemargin_rel_r /// 
+		if inrange(votemargin_rel,-`bw_opt', `bw_opt') [aweight=weight_ob] , ///
+		 vce(hc2)
+
+	mat coef_rg_ob[1,`i']=_b[elected]
+	mat CI_rg_ob[1,`i'] = _b[elected] - invttail(e(df_r),.025)*_se[elected]
+	mat CI_rg_ob[2,`i'] = _b[elected] + invttail(e(df_r),.025)*_se[elected]
+
+	/*
+	* d5) Halfoptimal bandwidth
+
+	rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+				kernel(`k') vce(cluster ID_num) all rho(1) h(`bw_half')
+				
+	mat coef_rb_hb[1,`i']=e(tau_bc)
+	mat CI_rb_hb[1,`i'] = e(ci_l_rb)
+	mat CI_rb_hb[2,`i'] = e(ci_r_rb)
+
+	* d6) Implement regression version
+
+	*gen weigth_ob=1-abs(votemargin_rel/`bw_opt')
+
+	reg  `var' elected votemargin_rel_l votemargin_rel_r, /// 
+		cluster(ID_num), if inrange(votemargin_rel,- `bw_half', `bw_half')
+		
+	mat coef_rg_hb[1,`i']=_b[elected]
+	mat CI_rg_hb[1,`i'] = _b[elected] - invttail(e(df_r),.025)*_se[elected]
+	mat CI_rg_hb[2,`i'] = _b[elected] + invttail(e(df_r),.025)*_se[elected]
+	*/
+	local ++i
+	}
