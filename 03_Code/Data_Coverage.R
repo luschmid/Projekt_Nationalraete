@@ -14,7 +14,7 @@ library(xtable)
 library(janitor)
 library(vtable)
 
-path <- "C:/Schmidlu/Dropbox/Projekt Nationalräte/04_Results/04_Political_Rents"
+path <- "C:/Schmidlu/Dropbox/Projekt Nationalräte"
 setwd(path)
 
 #----------------------------------
@@ -27,10 +27,10 @@ Lookup <- function(year_pol,horizon){
 # This function returns 1 if a given "horizon" is covered by the Sugarcube
 # data for a specific election year ("year_pol"), and 0 otherwise. 
   
-year_sug <- c(1934,1943,1960,1962,1963,1964,1965,1966,1969,1972,1975,1979,1980,
+year<- c(1934,1943,1960,1962,1963,1964,1965,1966,1969,1972,1975,1979,1980,
               1981,1982,1983,1984,1985,1986,1987,1988,1989,1990,1991,1992,1993,
               1994,1995,1996,1997,1998,1999,2000,2001,2002,2003)
-return(ifelse((year_pol+horizon) %in% year_sug,1,0))
+return(ifelse((year_pol+horizon) %in% year,1,0))
 }
 
 # (ii) Define all election years 
@@ -70,21 +70,32 @@ ggplot(out_df_long, aes(y=year_pol, x=horizon)) +
   ylab("Year") + xlab("Horizon") + 
   theme(legend.position="none")
   
-ggsave("Data_Coverage.pdf",width = 8,height = 8)
+ggsave("./04_Results/04_Political_Rents/Data_Coverage.pdf",width = 8,height = 8)
 
 out_horizon <- out_df_long %>%
   filter(value==1) %>%
   group_by(horizon) %>%
-  summarize(year_mean=mean(year_pol))
+  summarize(year_mean=mean(year_pol)) %>%
+  mutate(ordering=ifelse)
 
 ggplot(out_horizon, aes(y=year_mean, x=horizon)) +
   geom_point()  +
   ylab("Year average") + xlab("Horizon") + 
   theme_minimal()
 
-ggsave("Data_Coverage_Mean.pdf",width = 8,height = 8)
+ggsave("./04_Results/04_Political_Rents/Data_Coverage_Mean.pdf",width = 8,height = 8)
 
 
 #-------------------------------------
 # (C) Generate overlap in regressions
 #-------------------------------------
+
+data_i_lrg_c1 <- read_dta(paste0(path, "./02_Processed_data/20_Analysis/sample_composition_i_lrg_c1.dta")) %>%
+  select(starts_with("s_i"))
+
+df_colnames <- colnames(data_i_lrg_c1)
+
+data_i_lrg_c1$s_i_lrg_c1_L3_ob[data_i_lrg_c1$s_i_lrg_c1_L4_ob==1 & data_i_lrg_c1$s_i_lrg_c1_L3_ob==1 ]
+data_i_lrg_c1$s_i_lrg_c1_L3_ob[data_i_lrg_c1$s_i_lrg_c1_L4_ob==1 & data_i_lrg_c1$s_i_lrg_c1_L3_ob==0 ]
+
+

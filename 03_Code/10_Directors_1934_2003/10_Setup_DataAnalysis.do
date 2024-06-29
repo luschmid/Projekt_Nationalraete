@@ -250,7 +250,7 @@ save "$dataNR\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", replace
 
 
 *** Step 5: collapse data to create dataset for analysis
-*use "$dataNR\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", clear
+use "$dataNR\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", clear
 
 ** Variable creation and naming
 rename NRid ID
@@ -283,6 +283,11 @@ collapse (first) `first' (sum) n_all_sum=all n_lrg_sum=lrg ///
 foreach var of varlist n_* {  
 	replace `var' = . if dir_year == 0
 }
+replace n_prs_sum = . if year < 1975  
+replace n_prs_avg = . if year < 1975
+// Information on function would be available in 1934. 
+// We ignore this year to avoid composition effects for individual lags and leads.
+
 
 foreach var in all lrg sml prs { 
 	gen i_`var' = .
@@ -293,9 +298,9 @@ foreach var in all lrg sml prs {
 
 *** Step 6: Import information on precision & recall at the link and mandate level
 
-merge 1:1 ID year using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_link.dta"
+merge 1:1 ID year using "$dataNR\12_Record_linkage\02_Sugarcube\pr_link.dta"
 drop _merge
-merge 1:1 ID year using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_mandate.dta"
+merge 1:1 ID year using "$dataNR\12_Record_linkage\02_Sugarcube\pr_mandate.dta"
 drop _merge
 
 
@@ -335,7 +340,7 @@ label var prc_lk "Precision at link-level"
 label var rcl_lk "Recall at link-level"
 label var f1_lk "F1 at link-level"
 label var prc_mn "Precision at mandate-level"
-label var rcl_mn "Recakll at mandate-level"
+label var rcl_mn "Recall at mandate-level"
 label var f1_mn "F1 at mandate-level"
 
 foreach var of varlist i_* n_* prc_* rcl_* f1_* {
