@@ -10,15 +10,11 @@ version 17
 
 *** Set paths
 
-global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
-global path_ol "C:\Schmidlu\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
+*global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
+*global path_ol "C:\Schmidlu\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
 
-*global path "C:\Current\Dropbox\Projekt Nationalräte"
-*path_ol "C:\Current\Dropbox\Apps\Overleaf\Political_Rents"
-*global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
-
-*global path "E:\12. Cloud\Dropbox\Projekt Nationalräte\"
-*global path_ol "E:\12. Cloud\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
+global path "C:\Current\Dropbox\Projekt Nationalräte"
+path_ol "C:\Current\Dropbox\Apps\Overleaf\Political_Rents"
 
 ***********************************************************************
 * A) Estimation of treatment effect over time using rdrobust package
@@ -419,9 +415,7 @@ save "$path\02_Processed_data\20_Analysis\sample_composition_`outcome'.dta", rep
 restore
 
 
-
-
-* (ii) Analysis of differences (Round 3)
+* (ii) Analysis of covariate differences across samples (round 2 mean comparison)
 
 use "$path\02_Processed_data\20_Analysis\sample_composition_i_lrg_c1.dta", clear
 
@@ -892,6 +886,222 @@ foreach s of varlist leftist centrist rightist{
 		local new_era_year 1975
 		preserve
 		keep if `s'==1
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1)
+
+		* Bandwidth
+		local bw_opt_p1_ay = e(h_l)
+		local bw_half_p1_ay = `bw_opt_p1_ay'/2
+		
+		* Robust
+		mat coef_rb_ob_p1_ay[1,`i']=e(tau_bc)
+		mat CI_rb_ob_p1_ay[1,`i'] = e(ci_l_rb)
+		mat CI_rb_ob_p1_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
+			
+		* Robust
+		mat coef_rb_hb_p1_ay[1,`i']=e(tau_bc)
+		mat CI_rb_hb_p1_ay[1,`i'] = e(ci_l_rb)
+		mat CI_rb_hb_p1_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1)
+
+		* Bandwidth
+		local bw_opt_p2_ay = e(h_l)
+		local bw_half_p2_ay = `bw_opt_p2_ay'/2
+		
+		* Robust
+		mat coef_rb_ob_p2_ay[1,`i']=e(tau_bc)
+		mat CI_rb_ob_p2_ay[1,`i'] = e(ci_l_rb)
+		mat CI_rb_ob_p2_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
+			
+		* Robust
+		mat coef_rb_hb_p2_ay[1,`i']=e(tau_bc)
+		mat CI_rb_hb_p2_ay[1,`i'] = e(ci_l_rb)
+		mat CI_rb_hb_p2_ay[2,`i'] = e(ci_r_rb)
+		
+		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1)
+
+		* Bandwidth
+		local bw_opt_p1_1y = e(h_l)
+		local bw_half_p1_1y = `bw_opt_p1_1y'/2
+		
+		* Robust
+		mat coef_rb_ob_p1_1y[1,`i']=e(tau_bc)
+		mat CI_rb_ob_p1_1y[1,`i'] = e(ci_l_rb)
+		mat CI_rb_ob_p1_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
+			
+		* Robust
+		mat coef_rb_hb_p1_1y[1,`i']=e(tau_bc)
+		mat CI_rb_hb_p1_1y[1,`i'] = e(ci_l_rb)
+		mat CI_rb_hb_p1_1y[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1)
+
+		* Bandwidth
+		local bw_opt_p2_1y = e(h_l)
+		local bw_half_p2_1y = `bw_opt_p2_1y'/2
+		
+		* Robust
+		mat coef_rb_ob_p2_1y[1,`i']=e(tau_bc)
+		mat CI_rb_ob_p2_1y[1,`i'] = e(ci_l_rb)
+		mat CI_rb_ob_p2_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
+			
+		* Robust
+		mat coef_rb_hb_p2_1y[1,`i']=e(tau_bc)
+		mat CI_rb_hb_p2_1y[1,`i'] = e(ci_l_rb)
+		mat CI_rb_hb_p2_1y[2,`i'] = e(ci_r_rb)
+		
+		restore
+		local ++i
+		
+		}
+	local title: var label `outcome'
+
+	foreach m in ///
+		rb_ob_p1_ay cl_ob_p1_ay rb_hb_p1_ay cl_hb_p1_ay ///
+		rb_ob_p2_ay cl_ob_p2_ay rb_hb_p2_ay cl_hb_p2_ay ///
+		rb_ob_p1_1y cl_ob_p1_1y rb_hb_p1_1y cl_hb_p1_1y ///
+		rb_ob_p2_1y cl_ob_p2_1y rb_hb_p2_1y cl_hb_p2_1y {
+
+		mat colnames coef_`m' = "-4 yrs" "-3 yrs" "-2 yrs" "-1 yr" ///
+			"0 yr" "+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" ///
+			"+6 yrs" "+7 yrs" "+8 yrs"
+			
+		mat colnames CI_`m' = "-4 yrs" "-3 yrs" "-2 yrs" "-1 yr" "0 yr" ///
+			"+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" "+6 yrs" ///
+			"+7 yrs" "+8 yrs"
+	}
+	
+	coefplot matrix(coef_rb_ob_p1_ay), ci(CI_rb_ob_p1_ay) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, optimal bandwidth, 1st order polynomial, `k', all elections")
+	graph export "$path_ol\figures\fig_rb_ob_p1_`k'_ay_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_hb_p1_ay), ci(CI_rb_hb_p1_ay) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, half optimal bandwidth, 1st order polynomial, `k', all elections")
+	graph export "$path_ol\figures\fig_rb_hb_p1_`k'_ay_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_ob_p2_ay), ci(CI_rb_ob_p2_ay) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, optimal bandwidth, 2nd order polynomial, `k', all elections")
+	graph export "$path_ol\figures\fig_rb_ob_p2_`k'_ay_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_hb_p2_ay), ci(CI_rb_hb_p2_ay) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, half optimal bandwidth, 2nd order polynomial, `k', all elections")
+	graph export "$path_ol\figures\fig_rb_hb_p2_`k'_ay_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_ob_p1_1y), ci(CI_rb_ob_p1_1y) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, optimal bandwidth, 1st order polynomial, `k', 1st election")
+	graph export "$path_ol\figures\fig_rb_ob_p1_`k'_1y_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_hb_p1_1y), ci(CI_rb_hb_p1_1y) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, half optimal bandwidth, 1st order polynomial, `k', 1st election")
+	graph export "$path_ol\figures\fig_rb_hb_p1_`k'_1y_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_ob_p2_1y), ci(CI_rb_ob_p2_1y) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, optimal bandwidth, 2nd order polynomial, `k', 1st election")
+	graph export "$path_ol\figures\fig_rb_ob_p2_`k'_1y_`outcome'_`s'.pdf", as(pdf) replace
+
+	coefplot matrix(coef_rb_hb_p2_1y), ci(CI_rb_hb_p2_1y) vertical nolabel yline(0) ///
+		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome'_`s': `title'" "Robust, half optimal bandwidth, 2nd order polynomial, `k', 1st election")
+	graph export "$path_ol\figures\fig_rb_hb_p2_`k'_1y_`outcome'_`s'.pdf", as(pdf) replace
+	
+	clear matrix
+*	}
+}
+}
+}
+
+
+*************************************************
+* D) Bias-corrected robust CIs and undersmoothing 
+*************************************************
+
+* Note: These results are in the files results_round_5 in the following dropbox
+*       folder: Projekt Nationalräte\04_Results\04_Political_Rents
+*       The estimates take seriously the points of Callonico et al. (2014, Stata
+*       Journal, p. 918) that a) bias correction or b) undersmoothing are rele-
+*       vant to correct biases in CIs - not point estimates - and that a) and b)
+*       are alternative approaches to address this issue.
+
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+
+*	qui {
+	clear matrix
+
+foreach k in tri {
+foreach s in early late {
+	
+	foreach m in ///
+		rb_ob_p1_ay cl_ob_p1_ay rb_hb_p1_ay cl_hb_p1_ay ///
+		rb_ob_p2_ay cl_ob_p2_ay rb_hb_p2_ay cl_hb_p2_ay ///
+		rb_ob_p1_1y cl_ob_p1_1y rb_hb_p1_1y cl_hb_p1_1y ///
+		rb_ob_p2_1y cl_ob_p2_1y rb_hb_p2_1y cl_hb_p2_1y {
+	mat coef_`m' = J(1,20,.)
+	mat CI_`m' = J(2,20,.)
+	}
+	local i = 1
+
+	foreach var of varlist `outcome'_L4 `outcome'_L3 `outcome'_L2 `outcome'_L1 ///
+		`outcome' `outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4 ///
+		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
+		
+		local new_era_year 1975
+		preserve
+		if "`s'"=="early" {
+		keep if year< `new_era_year'	
+		} 
+		else {
+		keep if year>= `new_era_year'		
+		}
 
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all rho(1)
