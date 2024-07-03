@@ -1078,7 +1078,6 @@ foreach outcome of varlist ///
 	clear matrix
 
 foreach k in tri {
-foreach s in early late {
 	
 	foreach m in ///
 		rb_ob_p1_ay cl_ob_p1_ay rb_hb_p1_ay cl_hb_p1_ay ///
@@ -1256,6 +1255,5 @@ foreach s in early late {
 	
 	clear matrix
 *	}
-}
 }
 }
