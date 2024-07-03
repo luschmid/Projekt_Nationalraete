@@ -14,7 +14,7 @@ version 17
 *global path_ol "C:\Schmidlu\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
 
 global path "C:\Current\Dropbox\Projekt Nationalräte"
-path_ol "C:\Current\Dropbox\Apps\Overleaf\Political_Rents"
+global path_ol "C:\Current\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
 
 ***********************************************************************
 * A) Estimation of treatment effect over time using rdrobust package
@@ -1056,7 +1056,6 @@ foreach s of varlist leftist centrist rightist{
 *       vant to correct biases in CIs - not point estimates - and that a) and b)
 *       are alternative approaches to address this issue.
 
-
 use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
 keep if votemargin_rel < .
 
@@ -1080,10 +1079,10 @@ foreach outcome of varlist ///
 foreach k in tri {
 	
 	foreach m in ///
-		rb_ob_p1_ay cl_ob_p1_ay rb_hb_p1_ay cl_hb_p1_ay ///
-		rb_ob_p2_ay cl_ob_p2_ay rb_hb_p2_ay cl_hb_p2_ay ///
-		rb_ob_p1_1y cl_ob_p1_1y rb_hb_p1_1y cl_hb_p1_1y ///
-		rb_ob_p2_1y cl_ob_p2_1y rb_hb_p2_1y cl_hb_p2_1y {
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
 	mat coef_`m' = J(1,20,.)
 	mat CI_`m' = J(2,20,.)
 	}
@@ -1092,15 +1091,6 @@ foreach k in tri {
 	foreach var of varlist `outcome'_L4 `outcome'_L3 `outcome'_L2 `outcome'_L1 ///
 		`outcome' `outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4 ///
 		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
-		
-		local new_era_year 1975
-		preserve
-		if "`s'"=="early" {
-		keep if year< `new_era_year'	
-		} 
-		else {
-		keep if year>= `new_era_year'		
-		}
 
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all rho(1)
@@ -1110,17 +1100,17 @@ foreach k in tri {
 		local bw_half_p1_ay = `bw_opt_p1_ay'/2
 		
 		* Robust
-		mat coef_rb_ob_p1_ay[1,`i']=e(tau_bc)
-		mat CI_rb_ob_p1_ay[1,`i'] = e(ci_l_rb)
-		mat CI_rb_ob_p1_ay[2,`i'] = e(ci_r_rb)
+		mat coef_est_ob_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_ay[2,`i'] = e(ci_r_rb)
 
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
 			
 		* Robust
-		mat coef_rb_hb_p1_ay[1,`i']=e(tau_bc)
-		mat CI_rb_hb_p1_ay[1,`i'] = e(ci_l_rb)
-		mat CI_rb_hb_p1_ay[2,`i'] = e(ci_r_rb)
+		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
 
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all rho(1)
@@ -1130,17 +1120,17 @@ foreach k in tri {
 		local bw_half_p2_ay = `bw_opt_p2_ay'/2
 		
 		* Robust
-		mat coef_rb_ob_p2_ay[1,`i']=e(tau_bc)
-		mat CI_rb_ob_p2_ay[1,`i'] = e(ci_l_rb)
-		mat CI_rb_ob_p2_ay[2,`i'] = e(ci_r_rb)
+		mat coef_est_ob_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_ay[2,`i'] = e(ci_r_rb)
 
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
 			
 		* Robust
-		mat coef_rb_hb_p2_ay[1,`i']=e(tau_bc)
-		mat CI_rb_hb_p2_ay[1,`i'] = e(ci_l_rb)
-		mat CI_rb_hb_p2_ay[2,`i'] = e(ci_r_rb)
+		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
 		
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all rho(1)
@@ -1150,18 +1140,18 @@ foreach k in tri {
 		local bw_half_p1_1y = `bw_opt_p1_1y'/2
 		
 		* Robust
-		mat coef_rb_ob_p1_1y[1,`i']=e(tau_bc)
-		mat CI_rb_ob_p1_1y[1,`i'] = e(ci_l_rb)
-		mat CI_rb_ob_p1_1y[2,`i'] = e(ci_r_rb)
+		mat coef_est_ob_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_1y[2,`i'] = e(ci_r_rb)
 
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
 			
 		* Robust
-		mat coef_rb_hb_p1_1y[1,`i']=e(tau_bc)
-		mat CI_rb_hb_p1_1y[1,`i'] = e(ci_l_rb)
-		mat CI_rb_hb_p1_1y[2,`i'] = e(ci_r_rb)
+		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all rho(1)
@@ -1171,30 +1161,29 @@ foreach k in tri {
 		local bw_half_p2_1y = `bw_opt_p2_1y'/2
 		
 		* Robust
-		mat coef_rb_ob_p2_1y[1,`i']=e(tau_bc)
-		mat CI_rb_ob_p2_1y[1,`i'] = e(ci_l_rb)
-		mat CI_rb_ob_p2_1y[2,`i'] = e(ci_r_rb)
+		mat coef_est_ob_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_1y[2,`i'] = e(ci_r_rb)
 
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
 			
 		* Robust
-		mat coef_rb_hb_p2_1y[1,`i']=e(tau_bc)
-		mat CI_rb_hb_p2_1y[1,`i'] = e(ci_l_rb)
-		mat CI_rb_hb_p2_1y[2,`i'] = e(ci_r_rb)
+		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
 		
-		restore
 		local ++i
 		
 		}
 	local title: var label `outcome'
 
 	foreach m in ///
-		rb_ob_p1_ay cl_ob_p1_ay rb_hb_p1_ay cl_hb_p1_ay ///
-		rb_ob_p2_ay cl_ob_p2_ay rb_hb_p2_ay cl_hb_p2_ay ///
-		rb_ob_p1_1y cl_ob_p1_1y rb_hb_p1_1y cl_hb_p1_1y ///
-		rb_ob_p2_1y cl_ob_p2_1y rb_hb_p2_1y cl_hb_p2_1y {
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
 
 		mat colnames coef_`m' = "-4 yrs" "-3 yrs" "-2 yrs" "-1 yr" ///
 			"0 yr" "+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" ///
@@ -1205,12 +1194,42 @@ foreach k in tri {
 			"+7 yrs" "+8 yrs"
 	}
 	
-	coefplot matrix(coef_rb_ob_p1_ay), ci(CI_rb_ob_p1_ay) vertical nolabel yline(0) ///
-		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
+		coefplot ///
+		(matrix(coef_est_ob_p1_ay), ci(CI_est_ob_p1_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_ay), ci(CI_est_hb_p1_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
-		title("`outcome'_`s': `title'" "Robust, optimal bandwidth, 1st order polynomial, `k', all elections")
-	graph export "$path_ol\figures\fig_rb_ob_p1_`k'_ay_`outcome'_`s'.pdf", as(pdf) replace
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_ay), ci(CI_est_ob_p2_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_ay), ci(CI_est_hb_p2_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p2_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+				coefplot ///
+		(matrix(coef_est_ob_p1_1y), ci(CI_est_ob_p1_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_1y), ci(CI_est_hb_p1_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_p1_`k'_1y_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_1y), ci(CI_est_ob_p2_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_1y), ci(CI_est_hb_p2_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_p2_`k'_1y_`outcome'.pdf", as(pdf) replace
 
+}
+}
+	
+	
 	coefplot matrix(coef_rb_hb_p1_ay), ci(CI_rb_hb_p1_ay) vertical nolabel yline(0) ///
 		mcolor(black) ciopts(lc(black)) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
