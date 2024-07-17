@@ -264,7 +264,10 @@ replace dir_year = 1 if inlist(year, 1934, 1943, 1960, 1962, 1963, 1964, 1965, /
 ** locals
 local first canton name firstname birthyear sex job elected ///
 votemargin_rel incumbent tenure list listname_bfs cand_before1931 ///
-municipality municipality_num language dir_year 
+municipality municipality_num language dir_year ///
+EDateJoining1 EDateLeaving1 EDateJoining2 EDateLeaving2 EDateJoining3 ///
+EDateLeaving3 EDateJoining4 EDateLeaving4 EDateJoining5 EDateLeaving5 ///
+EDateJoining6 EDateLeaving6
 
 keep `first' ID year PID CID capital compFunct 
 
@@ -296,7 +299,21 @@ foreach var in all lrg sml prs {
 }
 
 
-*** Step 6: Import information on precision & recall at the link and mandate level
+*** Step 6: Definitions of who is in office and when
+
+gen inoffice=0
+forvalues i=1(1)6 { 
+gen EYearJoining`i' = year(EDateJoining`i')
+gen EYearLeaving`i' = year(EDateLeaving`i')
+bysort ID: egen EYearJoining_temp=min(EYearJoining`i')
+bysort ID: egen EYearLeaving_temp=min(EYearLeaving`i')
+replace inoffice=1 if year>=EYearJoining_temp & year<= EYearLeaving_temp
+drop EYearJoining_temp EYearLeaving_temp
+}
+drop EDate* EYear*
+
+
+*** Step 7: Import information on precision & recall at the link and mandate level
 
 merge 1:1 ID year using "$dataNR\12_Record_linkage\02_Sugarcube\pr_link.dta"
 drop _merge
@@ -324,6 +341,7 @@ label var dir_year "Year available in Directory of Directors"
 label var municipality "Municipality name 2018 (residence)"
 label var municipality_num "Municipality number 2018 (residence)"
 label var language "Majority language in residence municipality"
+label var inoffice "Person is currently in National Council"
 label var i_all "At least one mandate, all companies"
 label var i_lrg "At least one mandate, large companies"
 label var i_sml "At least one mandate, small companies"

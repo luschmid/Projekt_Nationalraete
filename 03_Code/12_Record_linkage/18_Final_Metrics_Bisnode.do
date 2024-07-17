@@ -19,7 +19,7 @@ use "$path\02_Processed_data\nationalraete_1931_2015.dta",clear
 collapse (max) elected, by(ID)
 rename ID id_0
 
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\nr_elected.dta", replace
+save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\nr_elected.dta", replace
 
 * (ii) NR panel in wide format
 
@@ -89,25 +89,9 @@ erase "$path\02_Processed_data\01_Elections_1931_1975\gdename.dta"
 
 save "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_wide.dta", replace
 
-**********************
-* B) Read in Sugarcube
-**********************
-/*
-use PID year year_sug firstname lastname gdename CID firmname using "$path\02_Processed_data\10_Directors_1934_2003\Sugarcube_Person_CleanName-Gender-Geo_Companies.dta", clear
-duplicates drop PID year_sug firstname lastname gdename CID firmname, force
-compress
-rename PID id_1
-rename year_sug year_1
-label var year_1 "=year_sug: ONLY ID-Variable for RL purpose"
-rename firstname firstname_1
-rename lastname name_1
-rename gdename gdename_1
-tostring id_1, replace
-save "$path\02_Processed_data\10_Directors_1934_2003\Sugarcube_Person_CleanName-Gender-Geo_Companies_small.dta", replace
-*/
 
 *******************************
-* C) Read in ground truth files
+* B) Read in ground truth files
 *******************************
 
 insheet using ///
@@ -124,7 +108,9 @@ duplicates drop id_0, force
 keep id_0
 save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_test_set_polids.dta", replace
 restore
+
 * c) Drop all those with no match in GT data
+
 drop if id_1==.
 
 * d) Check for duplicates
@@ -132,52 +118,119 @@ duplicates report id_0 id_1
 
 * e) Keep only relevant variables
 keep id_0 id_1 
-save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_test_set_randomized_buckets_0.65.dta", replace
 
+* f) Merge NR information
 
-
-*********************************
-* D) Read in record linkage files
-*********************************
-
-* (i) Read in RL output after postprocessing
-
-import delim using "$path/02_Processed_data/12_Record_linkage/01_Bisnode/RL-Results-G7-perfectmatches.csv", delimiters(",") encoding("UTF-8") clear
-gen source = "perfect"
 preserve
-import delim using "$path/02_Processed_data/12_Record_linkage/01_Bisnode/04_Post_RL_QualChecks/bisnode_fp_firstcheck_Generation7_optimal_corrected.csv", delimiters(",") encoding("UTF-8") clear
-gen source = "optimal"
-save "$path/02_Processed_data/12_Record_linkage/01_Bisnode/bisnode_fp_firstcheck_Generation7_optimal_corrected.dta", replace
-restore
-preserve
-import delim using "$path/02_Processed_data/12_Record_linkage/01_Bisnode/04_Post_RL_QualChecks/bisnode_fp_firstcheck_Generation7_0_corrected.csv", delimiters(",") encoding("UTF-8") clear
-gen source = "0"
-save "$path/02_Processed_data/12_Record_linkage/01_Bisnode/bisnode_fp_firstcheck_Generation7_0_corrected.dta", replace
+use "$path\02_Processed_data\nationalraete_1931_2015.dta", clear
+keep ID birthyear
+duplicates drop ID, force
+rename ID id_0
+save "$path\02_Processed_data\nr_id_birthyear.dta", replace
 restore
 
-append using "$path/02_Processed_data/12_Record_linkage/01_Bisnode/bisnode_fp_firstcheck_Generation7_optimal_corrected.dta"
-append using "$path/02_Processed_data/12_Record_linkage/01_Bisnode/bisnode_fp_firstcheck_Generation7_0_corrected.dta"
+merge m:1 id_0 using "$path\02_Processed_data\nr_id_birthyear.dta"
+erase "$path\02_Processed_data\nr_id_birthyear.dta"
+keep if _merge==3
+drop _merge
 
-drop if codierungfin == 1 // False positives
+* g) Merge Bisnode information
+
+preserve
+use personenid duns gremium rechtsform funktion eintrittdatum austrittdatum ///
+	using "$path\02_Processed_data\11_Directors_1994_2018\Bisnode_Person-Firmen_Geo.dta", clear
+
+gen entrydate = date(eintrittdatum, "YMD")
+format entrydate %td
+gen exitdate = date(austrittdatum, "YMD")
+format exitdate %td
+gen flag = 1 if exitdate<entrydate & entrydate != . & exitdate != .
+gen exitdate_tmp = exitdate
+replace exitdate = entrydate if flag == 1 // assumption: confused entry/exit date
+replace entrydate = exitdate_tmp if flag == 1
+drop exitdate_tmp flag
+gen entryear=year(entrydate)
+gen exityear=year(exitdate)
+
+replace entryear = 1994 if eintrittdatum == ""
+replace exityear = 2017 if austrittdatum == ""
+
+rename personenid id_1
+bysort id_1: egen entryear_min=min(entryear)
+bysort id_1: egen exityear_max=max(exityear)
+keep id_1 entryear_min exityear_max entryear exityear duns gremium rechtsform funktion
+
+save "$path\02_Processed_data\bisnode_id_mandates.dta", replace
+restore
+
+merge 1:m id_1 using "$path\02_Processed_data\bisnode_id_mandates.dta",gen(merge_id1)
+erase "$path\02_Processed_data\bisnode_id_mandates.dta"
+keep if merge_id1==3
+
+* h) Keep only Verwaltungsräte and apply age restrictions
+
+gen age_firstmandate=entryear_min-birthyear
+gen age_lastmandate=exityear_max-birthyear
+
 drop if age_firstmandate < 18  // see Email Lukas: 19.11.2022
 drop if age_lastmandate < 18
 drop if age_firstmandate > 85
 drop if age_lastmandate > 99	
 
-keep id_0 id_1
-duplicates report id_0 id_1   // duplicates because  manual post-processing was at spell-level, not  personID-level (i.e. various mandates per person)
-duplicates drop id_0 id_1, force
+keep if gremium == "Verwaltungsrat" & rechtsform == "Aktiengesellschaft"
+drop if inlist(funktion, "Aktuar/in (nicht Mitglied)", "Sekretär/in (nicht Mitglied)", "Beisitzer/in", "Ausseramtliche/r Konkursverwalter/in", "Generalsekretär/in (nicht Mitglied)", "Liquidator/in", "Kassier/in (nicht Mitglied)", "Protokollführer/in (nicht Mitglied)", "Verwalter/in (nicht Mitglied)")
+
+* i) Construct dataset at id_0-id_1-mandate-year level 
+
+bysort id_1 duns: gen mandid = _n
+expand 25, gen(expy)
+bysort id_1 duns mandid: gen year=_n + 1993
+drop expy
+
+drop if year<entryear | year>exityear
+drop if year>2017
+
+duplicates drop id_0 id_1 duns year, force
+keep id_0 id_1 duns year
+
+save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_test_set_final.dta", replace
 
 
-save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\RL_Output_after_FP_and_FN_no_duplicates_temp.dta", replace
+*********************************
+* C) Read in record linkage files
+*********************************
 
-erase "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_fp_firstcheck_Generation7_0_corrected.dta"
-erase "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_fp_firstcheck_Generation7_optimal_corrected.dta"
+* (i) Read in RL output after postprocessing
+* Note: Split in three parts: (i) perfect matches (no post-processing), 
+* 		(ii) optimal cutoff, (iii) cutoff of 0. For (ii), we look at all *
+* 		connections. For (iii), we focus only on connections within 
+*       rechtsform=="Aktiengesellschaft" & gremium=="Verwaltungsrat". 
+* 		Important: This dataset is generated in 05_Setup_DataAnalysis.do. 
+*		Corrections for only Verwaltungsräte and age are already implemented. 
 
+use "$path\02_Processed_data\11_Directors_1994_2018\RL_G7_NR-Bisnode_1994-2017.dta", clear
+rename NRid id_0
+rename VRid id_1 
+
+* (ii) Keep only id_0 that are in test dataset
+
+merge m:1 id_0 using "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_test_set_polids.dta"
+keep if _merge==3
+drop _merge
+
+* (iii) Keep only those observations with a mandate (drop true negatives)
+
+unique id_0 if id_1!=.
+
+keep if id_1!=.
+
+keep id_0 id_1 duns year
+
+save "$path\02_Processed_data\12_Record_linkage\01_Bisnode\rl_test_set.dta", replace
 
 
 *****************************************************************************
-* E) Merge final RL output (after FP and FN checks) to ground truth files and 
+* D) Merge final RL output (after FP and FN checks) to ground truth files and 
 *	 generate metrics															
 *****************************************************************************
 
@@ -185,38 +238,13 @@ erase "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_fp_firstchec
 
 * a) Read in test set
 
-use "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_test_set_randomized_buckets_0.65.dta", clear
-
-tostring id_1, replace
+use "$path\02_Processed_data\12_Record_linkage\01_Bisnode\bisnode_test_set_final.dta", clear
 
 * b) Merge RL output
 
-merge 1:1 id_0 id_1 year_1 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\RL_Output_after_FP_and_FN_no_duplicates_temp.dta", gen(merge_testset)
+merge 1:1 id_0 id_1 duns year using "$path\02_Processed_data\12_Record_linkage\01_Bisnode\rl_test_set.dta", gen(merge_testset)
 
-*merge 1:1 id_0 id_1 year_1 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\rl_sugarcube_cortable.dta", gen(merge_testset)
-
-
-* c) Merge politician IDs in test set and drop all those not in test set
-
-merge m:1 id_0 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_test_set_polids.dta"
-
-keep if _merge==3
-
-* d) Merge politician ID with coding for elected (at least once)
-
-merge m:1 id_0 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\nr_elected.dta", gen(merge_elected)
-
-drop if merge_elected==2
-
-* e) Merge data about when politicians were in office
-
-merge m:1 id_0 year_1 using "$path\02_Processed_data\02_Elections_1971_2015\OfficeYears_GT1.dta", gen(merge_offyears)
-drop if merge_offyears == 2
-
-gen in_office=0 if elected==1
-replace in_office=1 if merge_offyears==3 & elected==1
-
-* f) Recode TP, FP, and FN
+* c) Recode TP, FP, and FN
 
 gen TP=0 
 replace TP=1 if merge_testset==3
@@ -225,108 +253,9 @@ replace FP=1 if merge_testset==2
 gen FN=0 
 replace FN=1 if merge_testset==1
 
-* g) Output for entire test set and by elected status
+* d) Output for entire test set and by elected status
 
 preserve
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  F1 TP FP FN
-restore 
-
-preserve
-keep if in_office==1
-tab in_office,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  F1 TP FP FN
-restore 
-
-preserve
-keep if in_office!=1
-tab in_office,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  F1 TP FP FN
-restore 
-
-preserve
-keep if elected==1
-tab elected,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall  F1 TP FP FN
-restore
-
-preserve
-keep if elected==0
-tab elected,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  F1 TP FP FN
-restore
-
-* h) Collapse TP, FP, and FN by politician ID and year for RDD test
-
-gen year=year_1
-replace year=year_1+1 if year_1<=1963
-* Note: replace year_sug (for GT and RL) with true years (June 24). 
-
-preserve
-collapse (sum) TP FP FN , by(id_0 year)
-
-gen prc_lk=TP/(FP+TP)
-gen rcl_lk=TP/(FN+TP)
-gen f1_lk = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-rename id_0 ID
-keep ID year prc_lk rcl_lk f1_lk
-
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_link.dta", replace
-restore
-
-sum prc_lk if year==1939 | year==1943 | year==1947 | year==1951 | year==1955 | /// 
-	year==1959 | year==1963 | year==1967 | year==1971 | year==1975 | ///
-	year==1979 | year==1983 | year==1987 | year==1991 | ///
-	year==1995 | year==1999 | year==2003
-
-
-* (ii) Test set at mandate level
-
-* a) Merge Sugarcube and politician data for visual inspection
-
-merge 1:m id_1 year_1 using "$path\02_Processed_data\10_Directors_1934_2003\Sugarcube_Person_CleanName-Gender-Geo_Companies_small.dta", gen(merge_sug)
-drop if merge_sug == 2
-
-merge m:1 id_0 using "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_wide.dta", gen(merge_nr)
-drop if merge_nr == 2
-
-sort id_0 year_1 id_1 firmname
-
-order id_0 year_1 id_1 firstname firstname_1  name name_1  gdename  gdename_1 firmname TP FP FN in_office
-br id_0 year_1 id_1 firstname firstname_1  name name_1  gdename  gdename_1 firmname TP FP FN in_office
-
-* b) Metrics at mandate level (comparable to GT 2)
-
-preserve
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  TP FP FN
-restore 
-
-preserve
-keep if in_office==1
-tab in_office,missing
 collapse (sum) TP FP FN
 gen precision=TP/(FP+TP)
 gen recall=TP/(FN+TP)
@@ -334,45 +263,4 @@ gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (
 sum precision recall F1 TP FP FN
 restore 
 
-preserve
-keep if in_office!=1
-tab in_office,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1 TP FP FN
-restore 
-
-preserve
-keep if elected==1
-tab elected,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  TP FP FN
-restore
-
-preserve
-keep if elected==0
-tab elected,missing
-collapse (sum) TP FP FN
-gen precision=TP/(FP+TP)
-gen recall=TP/(FN+TP)
-gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1 TP FP FN
-restore
-
-* c) Collapse TP, FP, and FN by politician ID and year for RDD test
-
-collapse (sum) TP FP FN , by(id_0 year)
-
-gen prc_mn=TP/(FP+TP)
-gen rcl_mn=TP/(FN+TP)
-gen f1_mn = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-rename id_0 ID
-keep ID year prc_mn rcl_mn f1_mn
-
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_mandate.dta", replace
 

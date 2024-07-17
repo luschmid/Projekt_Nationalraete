@@ -129,7 +129,7 @@ label var n_prs_avg_c2 "Avg. number of mandates as president"
 encode ID, gen(ID_num)
 xtset ID_num year
 
-foreach var of varlist elected votemargin_rel incumbent n_* i_* prc_* rcl_* ///
+foreach var of varlist elected votemargin_rel n_* i_* prc_* rcl_* ///
 	f1_* {
 	forv i = 1(1)8 {
 	gen `var'_L`i' = L`i'.`var'

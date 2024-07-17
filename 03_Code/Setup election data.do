@@ -3194,6 +3194,18 @@ label var originno3 "Municipality no. of third origin municipality"
 label var originno4 "Municipality no. of fourth origin municipality"
 label var originno5 "Municipality no. of fifth origin municipality"
 label var originno6 "Municipality no. of sixth origin municipality"
+label var EDateJoining1 "Date of Joining National Council, First Spell"
+label var EDateLeaving1 "Date of Leaving National Council, First Spell"
+label var EDateJoining2 "Date of Joining National Council, Second Spell"
+label var EDateLeaving2 "Date of Leaving National Council, Second Spell"
+label var EDateJoining3 "Date of Joining National Council, Third Spell"
+label var EDateLeaving3 "Date of Leaving National Council, Third Spell"
+label var EDateJoining4 "Date of Joining National Council, Fourth Spell"
+label var EDateLeaving4 "Date of Leaving National Council, Fourth Spell"
+label var EDateJoining5 "Date of Joining National Council, Fifth Spell"
+label var EDateLeaving5 "Date of Leaving National Council, Fifth Spell"
+label var EDateJoining6 "Date of Joining National Council, Sixth Spell"
+label var EDateLeaving6 "Date of Leaving National Council, Sixth Spell"
 
 
 
@@ -3236,7 +3248,7 @@ local vars ID year canton /// // e_id_sug n_id_sug
 	  participation_L1 participation_F1 elected_F1 elected_L1 ///
 	  votemargin_L1 voters_cant_L1 eligible_cant_L1 ///
 	  municipalityno originno1 originno2 originno3 originno4 originno5 listpos ///
-	  originno6
+	  originno6 EDateJoining1-EDateJoining6 EDateLeaving1-EDateLeaving6
 	  
 order `vars'
 keep `vars'

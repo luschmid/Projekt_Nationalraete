@@ -40,6 +40,70 @@ restore
 append using "$tempBis\bisnode_fp_firstcheck_Generation7_optimal_corrected.dta"
 append using "$tempBis\bisnode_fp_firstcheck_Generation7_0_corrected.dta"
 
+* Note: We check and correct all id_0-id_1 combinations with inconsistent 
+*		coding. 
+*replace codierungfin=0 if codierungfin==.
+*bysort id_0 id_1: egen codierungfin_sd=sd(codierungfin)
+replace codierungfin = 1 if id_0=="AG-1979-0055" & id_1==177054
+replace codierungfin = 1 if id_0=="AG-1979-0055" & id_1==667537
+replace codierungfin = 1 if id_0=="AG-1979-0055" & id_1==785937
+replace codierungfin = 1 if id_0=="BL-1987-0021" & id_1==189408
+replace codierungfin = . if id_0=="BS-1947-0021" & id_1==1075814
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==58238
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==514349
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==656940
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==666355
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==1053002
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==1148419
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==1167791
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==1177726
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==1894530
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==2107198
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==2634212
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==3227841
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==3255342
+replace codierungfin = . if id_0=="GE-1983-0023" & id_1==3550488
+replace codierungfin = 1 if id_0=="SG-1939-0009" & id_1==18018
+replace codierungfin = 1 if id_0=="SG-1939-0009" & id_1==280029
+replace codierungfin = 1 if id_0=="SG-1939-0009" & id_1==1958692
+replace codierungfin = 1 if id_0=="SG-1939-0009" & id_1==2030456
+replace codierungfin = 1 if id_0=="SG-1939-0009" & id_1==2157274
+replace codierungfin = . if id_0=="TG-2003-0002" & id_1==1012067
+replace codierungfin = . if id_0=="ZH-1931-0079" & id_1==1177331
+replace codierungfin = 1 if id_0=="ZH-1955-0143" & id_1==1181160
+replace codierungfin = . if id_0=="ZH-1959-0067" & id_1==66786
+replace codierungfin = 1 if id_0=="ZH-1963-0043" & id_1==2562995
+replace codierungfin = . if id_0=="ZH-1967-0109" & id_1==465692
+replace codierungfin = 1 if id_0=="ZH-1975-0460" & id_1==33692
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==234436
+replace codierungfin = 1 if id_0=="ZH-1975-0460" & id_1==437512
+replace codierungfin = 1 if id_0=="ZH-1975-0460" & id_1==485550
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==754800
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==755450
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==835865
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1134725
+replace codierungfin = 1 if id_0=="ZH-1975-0460" & id_1==1143263
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1150015
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1307555
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1680686
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1799654
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1860015
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1885833
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1905191
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1911161
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1913400
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1939834
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==1943092
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==2091676
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==2190689
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==2445521
+replace codierungfin = . if id_0=="ZH-1975-0460" & id_1==3153807
+replace codierungfin = . if id_0=="ZH-1983-9113" & id_1==1589405
+replace codierungfin = 1 if id_0=="ZH-1991-0263" & id_1==552500
+replace codierungfin = . if id_0=="ZH-1991-9133" & id_1==142369
+replace codierungfin = . if id_0=="ZH-1995-0266" & id_1==170689
+replace codierungfin = . if id_0=="ZH-2003-0586" & id_1==1402172
+
 drop if codierungfin == 1 // False positives
 drop if age_firstmandate < 18  // see Email Lukas: 19.11.2022
 drop if age_lastmandate < 18
@@ -47,7 +111,7 @@ drop if age_firstmandate > 85
 drop if age_lastmandate > 99	
 
 keep id_0 id_1
-duplicates report id_0 id_1   // duplicates because  manual post-processing was at spell-level, not  personID-level (i.e. various mandates per person)
+duplicates report id_0 id_1   // duplicates because of multiple cluster-ids (connections can be found in more than one cluster in RL)
 duplicates drop id_0 id_1, force
 
 duplicates report id_1 // create dataset unique in bisnode ID
@@ -83,7 +147,6 @@ duplicates report VRid duns handelsregisternummer rechtsform gremium funktion ei
 *br * if dupl>0   // visual inspection suggests genuine duplicates
 *drop dupl
 duplicates drop VRid duns handelsregisternummer rechtsform gremium funktion eintrittdatum austrittdatum kapitalnominalag kapitaleinbezahltag plzdomiziladresse firma, force
-
 
 * keep only AG's and VR mandates (post-processing only considered those)
 keep if gremium == "Verwaltungsrat" & rechtsform == "Aktiengesellschaft"
@@ -283,7 +346,10 @@ rename duns CID
 ** locals
 local first canton name firstname birthyear sex job elected ///
 votemargin_rel incumbent tenure list listname_bfs cand_before1931 ///
-municipality municipality_num language 
+municipality municipality_num language ///
+EDateJoining1 EDateLeaving1 EDateJoining2 EDateLeaving2 EDateJoining3 ///
+EDateLeaving3 EDateJoining4 EDateLeaving4 EDateJoining5 EDateLeaving5 ///
+EDateJoining6 EDateLeaving6
 
 keep `first' ID year PID CID funktion kapitalnominalag // potentially: branch and real-estate company indicator
 
@@ -305,6 +371,21 @@ foreach var in all lrg sml prs {
 	replace i_`var' = 0 if n_`var'_sum == 0
 	replace i_`var' = 1 if n_`var'_sum > 0 & n_`var'_sum < .
 }
+
+*** Step 6: Definitions of who is in office and when
+
+gen inoffice=0
+forvalues i=1(1)6 { 
+gen EYearJoining`i' = year(EDateJoining`i')
+gen EYearLeaving`i' = year(EDateLeaving`i')
+bysort ID: egen EYearJoining_temp=min(EYearJoining`i')
+bysort ID: egen EYearLeaving_temp=min(EYearLeaving`i')
+replace inoffice=1 if year>=EYearJoining_temp & year<= EYearLeaving_temp
+drop EYearJoining_temp EYearLeaving_temp
+}
+drop EDate* EYear*
+
+
 label var ID "Candidate ID"
 label var canton "Canton"
 label var cand_before1931 "Candidate participated in 1925 and/or 1928 election"
@@ -322,6 +403,7 @@ label var job "Job title"
 label var municipality "Municipality name 2018 (residence)"
 label var municipality_num "Municipality number 2018 (residence)"
 label var language "Majority language in residence municipality"
+label var inoffice "Person is currently in National Council"
 label var i_all "At least one mandate, all companies"
 label var i_lrg "At least one mandate, large companies"
 label var i_sml "At least one mandate, small companies"
