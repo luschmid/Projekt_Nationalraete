@@ -750,6 +750,7 @@ replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if missing(UCID_1934_2
 *tag them & exclude them first
 
 bysort year UCID_1934_2003: gen dup = cond(_N==1,0,_n) 	
+sort dup UCID_1934_2003 year 
 
 sort UCID_1934_2003 year  UCID_panel_1  
 by UCID_1934_2003: replace FalsePositive = FalsePositive[_n-1] if missing(FalsePositive)
@@ -763,24 +764,15 @@ keep if FalsePositive == 1
 save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\fuzzy10_falsepositive", replace
 restore
 
-*Corrections of evaluation
-replace FalsePositive =. if UCID_1934_2003 == 20279
-replace FalsePositive =. if UCID_1934_2003 == 20932
-replace FalsePositive =. if UCID_1934_2003 == 22854
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 == 
-replace FalsePositive =. if UCID_1934_2003 ==
-replace FalsePositive =. if UCID_1934_2003 ==
-replace FalsePositive =. if UCID_1934_2003 ==
-replace FalsePositive =. if UCID_1934_2003 ==
+*Subsample with ok matches
+preserve
+keep if FalsePositive == 0
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\fuzzy10_nofalsepositive", replace
+restore
 
-replace FalsePositive=. if cname == "gt asset management ag"
-replace FalsePositive=. if cname == "gtasset management ag"
+******************************
+* START HERE*
+******************************
 
 replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if FalsePositive == 1
 bysort year UCID_1934_2003: gen dup2 = cond(_N==1,0,_n) 	
