@@ -95,10 +95,7 @@ sort year
 merge 1:1 NRid year using "$tempSug\NRid-years.dta"
 drop _merge
 gen id_pol = NRid
-gen candidate = 0 // years with candidacy
-replace candidate = 1 if elected != .
-label var candidate "Was a political candidate in latest election"
-order NRid canton year name firstname birthyear sex job candidate elected
+order NRid canton year name firstname birthyear sex job elected
 sort year id_pol
 save "$tempSug\RL_NRinfo_ypanel.dta", replace 
 
@@ -273,9 +270,20 @@ keep `first' ID year PID CID capital compFunct
 
 ** collapse
 gen all = 1 if CID != .
-bysort year: egen cap75 = pctile(capital), p(75)
-gen lrg = 1 if CID != . & capital > cap75  & capital < . 
-gen sml = 1 if CID != . & capital <= cap75  & capital < .
+*bysort year: egen cap75 = pctile(capital), p(75)
+*gen lrg = 1 if CID != . & capital > cap75  & capital < . 
+*gen sml = 1 if CID != . & capital <= cap75  & capital < .
+bysort year: egen cap90 = pctile(capital), p(90)
+
+// read out and save capital thresholds
+preserve
+keep cap90 year
+collapse (first) cap90, by(year)
+save "$dataNR\10_Directors_1934_2003\sugar_cap90.dta", replace
+restore
+
+gen lrg = 1 if CID != . & capital > cap90  & capital < . 
+gen sml = 1 if CID != . & capital <= cap90  & capital < .
 gen prs = 1 if CID != . & compFunct == "president" | compFunct == "pre" | compFunct == "president/administrator"
 
 collapse (first) `first' (sum) all lrg sml prs, by(ID year PID) 

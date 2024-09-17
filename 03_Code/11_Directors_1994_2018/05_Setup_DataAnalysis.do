@@ -356,9 +356,20 @@ keep `first' ID year PID CID funktion kapitalnominalag // potentially: branch an
 ** collapse
 gen all = 1 if CID != .
 
-bysort year: egen cap75 = pctile(kapitalnominalag), p(75)
-gen lrg = 1 if CID != . & kapitalnominalag > cap75  & kapitalnominalag < . 
-gen sml = 1 if CID != . & kapitalnominalag <= cap75  & kapitalnominalag < .
+*bysort year: egen cap75 = pctile(kapitalnominalag), p(75)
+*gen lrg = 1 if CID != . & kapitalnominalag > cap75  & kapitalnominalag < . 
+*gen sml = 1 if CID != . & kapitalnominalag <= cap75  & kapitalnominalag < .
+bysort year: egen cap90 = pctile(kapitalnominalag), p(90)
+
+// read out and save capital thresholds
+preserve
+keep cap90 year
+collapse (first) cap90, by(year)
+save "$dataNR\11_Directors_1994_2018\bisnode_cap90.dta", replace
+restore
+
+gen lrg = 1 if CID != . & kapitalnominalag > cap90  & kapitalnominalag < . 
+gen sml = 1 if CID != . & kapitalnominalag <= cap90  & kapitalnominalag < .
 gen prs = 1 if CID != . & funktion == "Präsident/in"
 
 collapse (first) `first' (sum) all lrg sml prs, by(ID year PID)
@@ -425,18 +436,5 @@ duplicates report ID year
 sort ID year
 save "$dataNR\11_Directors_1994_2018\Politicians_Directorships_1994-2017.dta", replace
 
-erase "$tempBis\bisnode_fp_firstcheck_Generation7_0_corrected.dta"
-erase "$tempBis\RL_G7_Bisnode_Person-Firmen_Geo.dta"
-erase "$tempBis\years.dta"
-erase "$tempBis\NRids.dta"
-erase "$tempBis\NRid-years.dta"
-forv i = 1(1)4 {
-	erase "$tempBis\RL_Bisnode-NRids_1994-2018_tmpNR`i'.dta"
-	erase "$tempBis\RL_G7_NR-Bisnode_tmp`i'.dta"
-}
-erase "$tempBis\RL_G7_NR-Bisnode_tmp.dta"
-erase "$tempBis\RL_Bisnode-NRids_1994-2018_tmp.dta"
-erase "$tempBis\RL_NRinfo_ypanel.dta"
-erase "$tempBis\RL_bisnodeIDs_NRids.dta"
 rmdir "$tempBis"
 

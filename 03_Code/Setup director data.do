@@ -7,8 +7,8 @@ set more off
 version 17
 
 *global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
-global path "C:\Current\Dropbox\Projekt Nationalräte"
-*global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
+*global path "C:\Current\Dropbox\Projekt Nationalräte"
+global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
 
 ******************************************************
 * (B) Read in and merge data for periods 1934-2003 
@@ -45,6 +45,8 @@ foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum ///
 	i_all i_lrg i_sml i_prs {
 	qui pwcorr `var'_s1 `var'_s2
 	di "`var'" _col(20) %9.2f `r(rho)'
+	sum year if `var'_s1 == . & `var'_s2 != .
+	sum year if `var'_s2 == . & `var'_s1 != .
 }
 
 sum n_all_sum_s1 n_all_sum_s2 if inrange(year,1994,2003)
@@ -129,7 +131,7 @@ label var n_prs_avg_c2 "Avg. number of mandates as president"
 encode ID, gen(ID_num)
 xtset ID_num year
 
-foreach var of varlist elected votemargin_rel n_* i_* prc_* rcl_* ///
+foreach var of varlist elected votemargin_rel n_* i_* prc_* rcl_* inoffice ///
 	f1_* {
 	forv i = 1(1)8 {
 	gen `var'_L`i' = L`i'.`var'
@@ -146,10 +148,10 @@ order ID_num ID-job tenure-dir_year  ///
 	votemargin_rel votemargin_rel_L1 votemargin_rel_L2 votemargin_rel_L3 ///
 	votemargin_rel_L4 votemargin_rel_L5 votemargin_rel_L6 votemargin_rel_L7 ///
 	votemargin_rel_L8 ///
-	incumbent_F8 incumbent_F7 incumbent_F6 incumbent_F5 incumbent_F4 ///
-	incumbent_F3 incumbent_F2 incumbent_F1 incumbent incumbent_L1 incumbent_L2 ///
-	incumbent_L3 incumbent_L4 incumbent_L5 incumbent_L6 incumbent_L7 ///
-	incumbent_L8 ///
+	inoffice_F8 inoffice_F7 inoffice_F6 inoffice_F5 inoffice_F4 ///
+	inoffice_F3 inoffice_F2 inoffice_F1 inoffice inoffice_L1 inoffice_L2 ///
+	inoffice_L3 inoffice_L4 inoffice_L5 inoffice_L6 inoffice_L7 ///
+	inoffice_L8 ///
 	n_all_sum_c1_F8 n_all_sum_c1_F7 n_all_sum_c1_F6 n_all_sum_c1_F5 ///
 	n_all_sum_c1_F4 n_all_sum_c1_F3 n_all_sum_c1_F2 n_all_sum_c1_F1 n_all_sum_c1 ///
 	n_all_sum_c1_L1 n_all_sum_c1_L2 n_all_sum_c1_L3 n_all_sum_c1_L4 ///

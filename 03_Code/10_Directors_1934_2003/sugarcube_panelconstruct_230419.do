@@ -594,7 +594,7 @@ quietly by UCID_panel_1:  gen dup_panel = cond(_N==1,0,_n)
 bysort UCID_panel_1: egen maxyear = max(dup_panel)
 bysort UCID_panel_1: egen minyear = min(dup_panel)
 
-*Subsample of matched observations : example: two obs are matched together, three others, but they should be one single group of 5. We are searching for them in next steps.
+*Subsample of matched observations : example: two obs are matched together, three others, but they should be one single group of 5. We are searching for them in next steps. Note: just for informational purpose, not used later.
 preserve
 drop if dup_panel == 0
 save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_1934_2003_ok_full_2.dta", replace
@@ -657,7 +657,7 @@ foreach a of local agrp {
  and generated fuzzy_match dataset used below
 
 use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_1934_2003_notok_2.dta", clear
-bysort gdenr_2018 : strgroup cname, gen(UCID_`a'_`b') thresh(0.1) force
+bysort gdenr_2018 : strgroup cname, gen(UCID_1934_2003) thresh(0.1) force
 sort UCID_1934_2003 year
 save "$server\match_perfect_1934_2003_fuzzy_match_1.dta", replace
 *Run on server 26th of february
@@ -746,41 +746,421 @@ replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if missing(UCID_1934_2
 
 
 ********************************************************************************
-*Deal with duplicates UCID_1934_2003 & year (Collapse?)
+*Deal with duplicates UCID_1934_2003 & year 
 *tag them & exclude them first
 
+*Identify duplicate UCID_1934_2003 in one year (twice same ID in a year)
 bysort year UCID_1934_2003: gen dup = cond(_N==1,0,_n) 	
 sort dup UCID_1934_2003 year 
 
-sort UCID_1934_2003 year  UCID_panel_1  
-by UCID_1934_2003: replace FalsePositive = FalsePositive[_n-1] if missing(FalsePositive)
+*Identify group where ED et JU found FalsePositive
+gen FalsePositive_orig = FalsePositive
+rename FalsePositive FalsePositive_group
+sort UCID_1934_2003 year UCID_panel_1  
+by UCID_1934_2003: replace FalsePositive_group = FalsePositive_group[_n-1] if missing(FalsePositive_group)
 forval x = 1/34{
-by UCID_1934_2003: replace FalsePositive = FalsePositive[_n+1] if missing(FalsePositive)
+by UCID_1934_2003: replace FalsePositive_group = FalsePositive_group[_n+1] if missing(FalsePositive_group)
 }
 
-*Subsample with groups where there is a FP case
-preserve
-keep if FalsePositive == 1
-save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\fuzzy10_falsepositive", replace
-restore
+order CID UCID_3 UCID_panel_1 UCID_1934_2003 year periode FalsePositive_group FalsePositive_orig
 
-*Subsample with ok matches
-preserve
-keep if FalsePositive == 0
-save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\fuzzy10_nofalsepositive", replace
-restore
+*Give back UCID_panel_1 groups if dup (going back to perfect match)
+replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if dup > 0
+replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if FalsePositive_group == 1
 
-******************************
-* START HERE*
-******************************
+********************************************************************************
+***Identify further duplicates (same ID in a year): those who were already duplicate before. This goes back to the cross-sections.
 
-replace UCID_1934_2003 = maxUCID_1934_2003 + UCID_panel_1 if FalsePositive == 1
 bysort year UCID_1934_2003: gen dup2 = cond(_N==1,0,_n) 	
+sort dup2 UCID_1934_2003 year
 
-/*keep if dup2 > 0
-keep if si_dummy_2 == 1
-*/
+*There are 1353 obs with same ID in one year, will deal with that later as they will come up anyway with another matching round
+*Taged by dup2
 
-*Witouht FP cases
-drop if FalsePositive == 1
+********************************************************************************
 
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003.dta", replace
+
+********************************************************************************
+********************************************************************************
+* Matching without geographical restrictions
+********************************************************************************
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003.dta", clear
+
+sort UCID_1934_2003 year
+
+gen tag_2 = 1
+egen obs_total_2 = total(tag_2), by(UCID_1934_2003) //How many years in a row perfectly matched
+quietly by UCID_1934_2003:  gen dup_panel_2 = cond(_N==1,0,_n)
+bysort UCID_1934_2003: egen maxyear_2 = max(dup_panel_2)
+bysort UCID_1934_2003: egen minyear_2 = min(dup_panel_2)
+
+*Subsample of matched observations : example: two obs are matched together, three others, but they should be one single group of 5. We are searching for them in next steps. Note: just for informational purpose, not used later.
+preserve
+drop if dup_panel_2 == 0
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_ok_full_2.dta", replace
+restore
+
+*Obs in bewteen first and last appearance (100% correct and not usefull to further match, same mun, same exact name, two "years" in a row)
+preserve
+drop if dup_panel_2 == maxyear_2 | dup_panel_2 == minyear_2
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_middle_ok_2.dta", replace
+restore
+
+*First and last appareance in group starting in 1934 or ending in 2003 (not single occurences) 
+preserve 
+keep if year == 1934 | year == 2003
+keep if obs_total_2 > 1
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_first_end_ok_2.dta", replace
+restore
+
+*First and last appareance of a firm in each group : unmatched subsample
+preserve
+keep if dup_panel_2 == maxyear_2 | dup_panel_2 == minyear_2
+drop if year == 2003 & obs_total_2 > 1
+drop if year == 1934 & obs_total_2 > 1
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_notok_2.dta", replace
+restore
+
+*Append two "ok" subsample
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_middle_ok_2.dta", clear
+append using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_first_end_ok_2.dta"
+sort UCID_1934_2003 year
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_ok_2.dta", replace
+
+********************************************************************************
+* Perfect match across municipalities (pairs of years)
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003_notok_2.dta", clear
+sort cname year
+
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+local bgrp 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36
+foreach a of local agrp { 
+	gettoken b bgrp : bgrp
+	replace periode = `b' if year == `a'
+}
+
+drop if missing(cname)
+
+*Split in cross-sections
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp{
+	preserve
+		keep if year == `a'
+		save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_notok_2_temp.dta", replace
+	restore
+}
+
+* Build pair of years again
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002
+local bgrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp      
+    use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_notok_2_temp.dta", clear
+	append using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`b'_notok_2_temp.dta"
+	save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_`b'_notok_2_temp.dta", replace 
+}
+
+*Match across mun, over pairs of year
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002  
+local bgrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp      
+    use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_`b'_notok_2_temp.dta", clear
+		strgroup cname, gen(UCID_`a'_`b') thresh(0.000000000001) force
+		order CID UCID_`a'_`b'
+		sort UCID_`a'_`b' year
+	save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_`a'_`b'.dta", replace
+}
+
+********************************************************************************
+*Building panel back
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_1934_1943.dta", clear
+order CID UCID_1934_1943 
+
+local agrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002  
+local bgrp 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003 
+local cgrp 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 
+local dgrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001  
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp   
+	gettoken c cgrp : cgrp
+	gettoken d dgrp : dgrp
+
+		merge 1:1 CID year using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_`a'_`b'.dta", generate(_merge`c')
+		order CID UCID_`a'_`b' 
+		sort UCID_`a'_`b' UCID_`d'_`a'
+		bysort UCID_`d'_`a' (UCID_`a'_`b'): replace UCID_`a'_`b'  = UCID_`a'_`b'[_n-1] if missing(UCID_`a'_`b')
+		sort UCID_`a'_`b' UCID_`d'_`a' year
+		egen maxUCID_`a'_`b' = max(UCID_`a'_`b')
+		replace UCID_`a'_`b' = maxUCID_`a'_`b'  + UCID_`d'_`a' if missing(UCID_`a'_`b')
+}
+	
+drop UCID_1934_1943 UCID_1943_1960 UCID_1960_1962 UCID_1962_1963 UCID_1963_1964 UCID_1964_1965 UCID_1965_1966 UCID_1966_1969 UCID_1969_1972 UCID_1972_1975 UCID_1975_1979 UCID_1979_1980 UCID_1980_1981 UCID_1981_1982 UCID_1982_1983 UCID_1983_1984 UCID_1984_1985 UCID_1985_1986 UCID_1986_1987 UCID_1987_1988 UCID_1988_1989 UCID_1989_1990 UCID_1990_1991 UCID_1991_1992 UCID_1992_1993 UCID_1993_1994 UCID_1994_1995 UCID_1995_1996 UCID_1996_1997 UCID_1997_1998 UCID_1998_1999 UCID_1999_2000 UCID_2000_2001 UCID_2001_2002 _merge1 _merge2 _merge3 _merge4 _merge5 _merge6 _merge7 _merge8 _merge9 _merge10 _merge11 _merge12 _merge13 _merge14 _merge15 _merge16 _merge17 _merge18 _merge19 _merge20 _merge21 _merge22 _merge23 _merge24 _merge25 _merge26 _merge27 _merge28 _merge29 _merge30 _merge31 _merge32 _merge33 _merge34 maxUCID_1943_1960 maxUCID_1960_1962 maxUCID_1962_1963 maxUCID_1963_1964 maxUCID_1964_1965 maxUCID_1965_1966 maxUCID_1966_1969 maxUCID_1969_1972 maxUCID_1972_1975 maxUCID_1975_1979 maxUCID_1979_1980 maxUCID_1980_1981 maxUCID_1981_1982 maxUCID_1982_1983 maxUCID_1983_1984 maxUCID_1984_1985 maxUCID_1985_1986 maxUCID_1986_1987 maxUCID_1987_1988 maxUCID_1988_1989 maxUCID_1989_1990 maxUCID_1990_1991 maxUCID_1991_1992 maxUCID_1992_1993 maxUCID_1993_1994 maxUCID_1994_1995 maxUCID_1995_1996 maxUCID_1996_1997 maxUCID_1997_1998 maxUCID_1998_1999 maxUCID_1999_2000 maxUCID_2000_2001 maxUCID_2001_2002 maxUCID_2002_2003
+
+rename UCID_2002_2003 UCID_panel_2
+sort UCID_panel_2 year
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_all.dta", replace
+
+********************************************************************************
+* Match same year, same name, different municipalities
+* Sometimes OCR (immobilien AG, 21 times)
+* Sometimes due to cleaning of "Holding" (you donkey)
+* Sometimes geocoding wrong (no mun, wrong mun)
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_all.dta", clear
+sort UCID_panel_2 year
+egen maxUCID_panel_2 = max(UCID_panel_2)
+quietly by UCID_panel_2 year:  gen REAL_PROBLEM = cond(_N==1,0,_n) if UCID_panel_2 !=. 
+replace UCID_panel_2 = UCID_panel_2 + UCID_1934_2003 + maxUCID_panel_2 if REAL_PROBLEM > 0
+gen UCID_panel_2_duplicates = UCID_panel_2
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_all_temp.dta", replace
+
+********************************************************************************
+* Attribute same IDs
+
+use "C:\Users\schmutzy\Desktop\Projekt Nationalräte\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_1934_2003.dta", clear 
+sort CID year
+
+quietly by CID year:  gen PROBLEM = cond(_N==1,0,_n) /*Exact duplicates for all vars!*/
+drop if PROBLEM == 2
+drop PROBLEM
+
+merge 1:1 CID year using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_all_temp.dta"
+
+gen UCID_1934_2003_temp = UCID_1934_2003
+order CID UCID_3 UCID_1934_2003 UCID_1934_2003_temp UCID_panel_1 UCID_panel_2 year periode cname gdenr gdenr_2018
+
+forval x = 1/8{
+sort UCID_panel_2 year
+by UCID_panel_2: replace UCID_1934_2003 = UCID_1934_2003[1] if UCID_panel_2 !=.
+sort UCID_1934_2003_temp year
+by UCID_1934_2003_temp: replace UCID_1934_2003 = UCID_1934_2003[1]
+}
+
+sort UCID_1934_2003 year
+quietly by UCID_1934_2003 year:  gen REAL_PROBLEM_2 = cond(_N==1,0,_n) /* SAME ID IN SAME YEAR ?*/
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003.dta", replace
+
+********************************************************************************
+* Subsample of beginning and ending of series
+********************************************************************************
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003.dta", clear /* Full sample after perfect match with UCID_1934_2003 for exact cname over pair of years w/o geo restrictions */
+sort UCID_1934_2003 year
+
+gen tag_3 = 1
+egen obs_total_3 = total(tag_3), by(UCID_1934_2003) //How many years in a row perfectly matched
+quietly by UCID_1934_2003:  gen dup_panel_3 = cond(_N==1,0,_n)
+bysort UCID_1934_2003: egen maxyear_3 = max(dup_panel_3)
+bysort UCID_1934_2003: egen minyear_3 = min(dup_panel_3)
+
+*Subsample of matched observations : example: two obs are matched together, three others, but they should be one single group of 5. We are searching for them in next steps. Note: just for informational purpose, not used later.
+preserve
+drop if dup_panel_3 == 0
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_ok_full_2.dta", replace
+restore
+
+*Obs in bewteen first and last appearance (100% correct and not usefull to further match, same mun, same exact name, two "years" in a row)
+preserve
+drop if dup_panel_3 == maxyear_3 | dup_panel_3 == minyear_3
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_middle_ok_2.dta", replace
+restore
+
+*First and last appareance in group starting in 1934 or ending in 2003 (not single occurences) 
+preserve 
+keep if year == 1934 | year == 2003
+keep if obs_total_2 > 1
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_first_end_ok_2.dta", replace
+restore
+
+*First and last appareance of a firm in each group : unmatched subsample
+preserve
+keep if dup_panel_3 == maxyear_3 | dup_panel_3 == minyear_3
+drop if year == 2003 & obs_total_3 > 1
+drop if year == 1934 & obs_total_3 > 1
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_notok_2.dta", replace
+restore
+
+*Append two "ok" subsample
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_middle_ok_2.dta", clear
+append using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_first_end_ok_2.dta"
+sort UCID_1934_2003 year
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_ok_2.dta", replace
+
+********************************************************************************
+* 10% matches across municipalities 
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_perfect_nogeo_1934_2003_notok_2.dta", clear
+sort cname year
+drop if missing(cname) /* 6 Obs without any firm names*/
+
+*Split in cross-sections
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp{
+	preserve
+		keep if year == `a'
+		save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_notok_3_temp.dta", replace
+	restore
+}
+
+* Build pair of years again
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002
+local bgrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp      
+    use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_notok_3_temp.dta", clear
+	append using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`b'_notok_3_temp.dta"
+	save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_`b'_notok_3_temp.dta", replace 
+}
+
+*Match across mun, over pairs of year
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002  
+local bgrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp      
+    use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_geo_`a'_`b'_notok_3_temp.dta", clear
+		strgroup cname, gen(UCID_`a'_`b') thresh(0.1) force
+		order CID UCID_`a'_`b'
+		sort UCID_`a'_`b' year
+	save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_`a'_`b'_3.dta", replace
+}
+
+********************************************************************************
+*Building panel back
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_1934_1943_3.dta", clear
+order CID UCID_1934_1943 
+
+local agrp 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002  
+local bgrp 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003 
+local cgrp 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 
+local dgrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001  
+foreach a of local agrp {    
+    gettoken b bgrp : bgrp   
+	gettoken c cgrp : cgrp
+	gettoken d dgrp : dgrp
+
+		merge 1:1 CID year using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_`a'_`b'_3.dta", generate(_merge`c')
+		order CID UCID_`a'_`b' 
+		sort UCID_`a'_`b' UCID_`d'_`a'
+		bysort UCID_`d'_`a' (UCID_`a'_`b'): replace UCID_`a'_`b'  = UCID_`a'_`b'[_n-1] if missing(UCID_`a'_`b')
+		sort UCID_`a'_`b' UCID_`d'_`a' year
+		egen maxUCID_`a'_`b' = max(UCID_`a'_`b')
+		replace UCID_`a'_`b' = maxUCID_`a'_`b'  + UCID_`d'_`a' if missing(UCID_`a'_`b')
+}
+	
+drop UCID_1934_1943 UCID_1943_1960 UCID_1960_1962 UCID_1962_1963 UCID_1963_1964 UCID_1964_1965 UCID_1965_1966 UCID_1966_1969 UCID_1969_1972 UCID_1972_1975 UCID_1975_1979 UCID_1979_1980 UCID_1980_1981 UCID_1981_1982 UCID_1982_1983 UCID_1983_1984 UCID_1984_1985 UCID_1985_1986 UCID_1986_1987 UCID_1987_1988 UCID_1988_1989 UCID_1989_1990 UCID_1990_1991 UCID_1991_1992 UCID_1992_1993 UCID_1993_1994 UCID_1994_1995 UCID_1995_1996 UCID_1996_1997 UCID_1997_1998 UCID_1998_1999 UCID_1999_2000 UCID_2000_2001 UCID_2001_2002 _merge1 _merge2 _merge3 _merge4 _merge5 _merge6 _merge7 _merge8 _merge9 _merge10 _merge11 _merge12 _merge13 _merge14 _merge15 _merge16 _merge17 _merge18 _merge19 _merge20 _merge21 _merge22 _merge23 _merge24 _merge25 _merge26 _merge27 _merge28 _merge29 _merge30 _merge31 _merge32 _merge33 _merge34 maxUCID_1943_1960 maxUCID_1960_1962 maxUCID_1962_1963 maxUCID_1963_1964 maxUCID_1964_1965 maxUCID_1965_1966 maxUCID_1966_1969 maxUCID_1969_1972 maxUCID_1972_1975 maxUCID_1975_1979 maxUCID_1979_1980 maxUCID_1980_1981 maxUCID_1981_1982 maxUCID_1982_1983 maxUCID_1983_1984 maxUCID_1984_1985 maxUCID_1985_1986 maxUCID_1986_1987 maxUCID_1987_1988 maxUCID_1988_1989 maxUCID_1989_1990 maxUCID_1990_1991 maxUCID_1991_1992 maxUCID_1992_1993 maxUCID_1993_1994 maxUCID_1994_1995 maxUCID_1995_1996 maxUCID_1996_1997 maxUCID_1997_1998 maxUCID_1998_1999 maxUCID_1999_2000 maxUCID_2000_2001 maxUCID_2001_2002 maxUCID_2002_2003
+
+rename UCID_2002_2003 UCID_panel_3
+sort UCID_panel_3 year
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_all.dta", replace
+
+********************************************************************************
+*** Subsample of obs matched
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_all.dta", clear
+	gen UCID_1934_2003_temp_2 = UCID_1934_2003 /* used later to attribute IDs over time */
+	quietly by UCID_panel_3 year:  gen REAL_PROBLEM_3 = cond(_N==1,0,_n) if UCID_panel_3 !=.
+
+	**droping unmatched obs
+		sort UCID_panel_3 year
+		quietly by UCID_panel_3:  gen matched = cond(_N==1,0,_n) /* Nb of obs within panel_2 groups */
+		drop if matched == 0
+
+	**droping those who have no additional match
+		*Nb of obs matched in previous step (to compare if same)
+		sort UCID_1934_2003 year
+		quietly by UCID_1934_2003:  gen matched_UCID_1934_2003 = cond(_N==1,0,_n) /* Nb of obs within UCID_1934_2003 groups */
+		sort UCID_panel_3 year
+
+		*Compare the nb of obs in both groups
+		by UCID_panel_3: egen max_matched = max(matched)
+		by UCID_panel_3: egen max_matched_UCID_1934_2003 = max(matched_UCID_1934_2003)
+		
+		/* Doesn't work because two matched obs (max_matched == 2) could also have been matched to another obs which is not the new one (max_matched_UCID_1934_2003 == 2)
+			Typically with beginning and end of a serie that are not matched together anymore
+		*/
+	
+		*Drop if no new matches
+		drop if max_matched == max_matched_UCID_1934_2003 & REAL_PROBLEM_3 == 0
+		
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_all_temp.dta", replace
+
+********************************************************************************
+*** Files to evaluate by ED & JU
+
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_all_temp.dta", clear
+
+drop UCID_3 UCID_1934_2003_temp UCID_panel_1 UCID_panel_2 FalsePositive_group FalsePositive_orig si_dummy_2 match_1 match_2 match_3 caddress_orig gdename_orig geo_merge branch_dummy gdename_extract capital_extract cname_extract E_CNTR N_CNTR gdenr_2012 maxUCID_temp4 FP_group_2 comma tag maxUCID_1934_2003 dup dup2 tag_2  maxUCID_panel_2 REAL_PROBLEM UCID_panel_2_duplicates _merge REAL_PROBLEM_2 tag_3 UCID_1934_2003_temp_2 matched matched_UCID_1934_2003 max_matched max_matched_UCID_1934_2003 CID_str REAL_PROBLEM_3 obs_total dup_panel maxyear minyear obs_total_2 dup_panel_2 maxyear_2 minyear_2 maxyear_3 minyear_3 function signature page
+
+order CID UCID_panel_3 UCID_1934_2003 year periode cname cname_orig 
+
+local agrp 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003
+local bgrp 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36
+foreach a of local agrp { 
+	gettoken b bgrp : bgrp
+	replace periode = `b' if year == `a'
+}
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval.dta", replace
+
+********************************************************************************
+* Test to link owners ID with owners name
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval.dta", clear
+
+replace owners = usubinstr(owners, ";", ",",.)
+replace owners = usubinstr(owners, "   ", "  ",.)
+replace owners = usubinstr(owners, "  ", " ",.)
+replace owners = usubinstr(owners, " ", "",.)
+split owners, parse(,) generate(owner)
+
+generate id = _n
+reshape long owner, i(UCID_panel_3 id) j(test)
+
+drop if missing(owner)
+rename owner PID
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval_long.dta", replace
+
+*Cleaning of persons list' (to have single PID per year)
+use PID year firstname lastname CID using "$path\02_Processed_data\10_Directors_1934_2003\Sugarcube_Person_CleanName-Gender-Geo_Companies.dta", clear
+
+quietly by PID year:  gen dup = cond(_N==1,0,_n)
+drop if dup > 1
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\PID_year_list.dta", replace
+
+*Merge
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval_long.dta", clear
+destring PID, replace
+merge m:1 PID year using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\PID_year_list.dta"
+keep if _merge == 3
+
+g fullname = firstname + " " + lastname
+drop firstname lastname dup _merge
+
+*Reshape to have one unique CID with multiple var with owners
+sort CID year
+bysort CID year: replace fullname = fullname[_n-1] + "; " + fullname
+replace fullname = " "+fullname
+replace fullname = usubinstr(fullname, " ; ", "",.)
+by CID year: replace fullname = fullname[_N]
+
+by CID year:  gen dup = cond(_N==1,0,_n)
+drop if dup > 1
+sort UCID_panel_3 year
+keep CID year cname fullname
+
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\CID_year_owners.dta", replace
+
+*Adding full names to file to evaluate
+use "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval.dta", clear
+merge 1:1 CID year using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\CID_year_owners.dta", nogen 
+sort UCID_panel_3 year
+order CID UCID_panel_3 UCID_1934_2003 year periode cname gdenr gdenr_2018 fullname
+save "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\match_10_nogeo_toeval_fullnames.dta", replace
+export excel using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\Evaluation\match_10_nogeo_toeval_fullnames_ED.xlsx", replace firstrow(variables)
+export excel using "$dump\02_Processed_data\10_Directors_1934_2003\23_Panel\Evaluation\match_10_nogeo_toeval_fullnames_JU.xlsx", replace firstrow(variables)

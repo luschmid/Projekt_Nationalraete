@@ -260,7 +260,7 @@ collapse (sum) TP FP FN
 gen precision=TP/(FP+TP)
 gen recall=TP/(FN+TP)
 gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1 TP FP FN
+sum  TP FP FN precision recall F1
 restore 
 
 

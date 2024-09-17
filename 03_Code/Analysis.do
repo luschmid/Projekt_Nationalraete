@@ -16,6 +16,9 @@ global path_ol "C:\Schmidlu\Dropbox\Projekt Nationalräte\04_Results\04_Politica
 global path "C:\Current\Dropbox\Projekt Nationalräte"
 global path_ol "C:\Current\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
 
+global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
+global path_ol "E:\12. Cloud\Dropbox\Projekt Nationalräte\04_Results\04_Political_Rents"
+
 ***********************************************************************
 * A) Estimation of treatment effect over time using rdrobust package
 ***********************************************************************
@@ -1056,6 +1059,8 @@ foreach s of varlist leftist centrist rightist{
 *       vant to correct biases in CIs - not point estimates - and that a) and b)
 *       are alternative approaches to address this issue.
 
+* Round 5
+
 use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
 keep if votemargin_rel < .
 
@@ -1107,7 +1112,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
@@ -1127,7 +1132,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
@@ -1148,7 +1153,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
@@ -1169,7 +1174,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
@@ -1302,7 +1307,7 @@ foreach s in early late {
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
@@ -1322,7 +1327,7 @@ foreach s in early late {
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
@@ -1343,7 +1348,7 @@ foreach s in early late {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
@@ -1364,7 +1369,7 @@ foreach s in early late {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
@@ -1522,7 +1527,7 @@ foreach s of varlist leftist centrist rightist{
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
@@ -1542,7 +1547,7 @@ foreach s of varlist leftist centrist rightist{
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
@@ -1563,7 +1568,7 @@ foreach s of varlist leftist centrist rightist{
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
@@ -1584,7 +1589,7 @@ foreach s of varlist leftist centrist rightist{
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
@@ -1724,7 +1729,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
@@ -1744,7 +1749,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
 			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
@@ -1765,7 +1770,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
@@ -1786,7 +1791,7 @@ foreach k in tri {
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
 			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
@@ -1851,12 +1856,209 @@ foreach k in tri {
 
 * Round 8
 
+* Note: For the definition of incumbent status: We opt for a simple solution with a 
+*		common reference date instead of  year-specific reference date. We guess 
+*		that this only marginally  affects the first stage and has no effect on 
+* 		the reduced form. 
+
 use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
 keep if votemargin_rel < .
 
 bysort ID: egen min_yr=min(year)
 g first_yr = 0
 replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+
+*	qui {
+
+	clear matrix
+
+foreach k in tri {
+	
+	foreach m in ///
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
+	mat coef_`m' = J(1,20,.)
+	mat CI_`m' = J(2,20,.)
+	}
+	local i = 1
+	
+	
+	foreach var in F1 F2 F3 F4 F5 F6 F7 F8 {
+
+		rdrobust `outcome'_`var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) fuzzy(inoffice_`var' sharpbw)
+
+		* Bandwidth
+		local bw_opt_p1_ay = e(h_l)
+		local bw_half_p1_ay = `bw_opt_p1_ay'/2
+		
+		* Robust
+		mat coef_est_ob_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `outcome'_`var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) fuzzy(inoffice_`var' sharpbw) 
+			
+		* Conventional
+		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
+
+		rdrobust `outcome'_`var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) fuzzy(inoffice_`var' sharpbw)
+
+		* Bandwidth
+		local bw_opt_p2_ay = e(h_l)
+		local bw_half_p2_ay = `bw_opt_p2_ay'/2
+		
+		* Robust
+		mat coef_est_ob_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `outcome'_`var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) fuzzy(inoffice_`var' sharpbw)
+			
+		* Conventional
+		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `outcome'_`var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1) fuzzy(inoffice_`var' sharpbw)
+
+		* Bandwidth
+		local bw_opt_p1_1y = e(h_l)
+		local bw_half_p1_1y = `bw_opt_p1_1y'/2
+		
+		* Robust
+		mat coef_est_ob_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `outcome'_`var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) fuzzy(inoffice_`var' sharpbw)
+			
+		* Conventional
+		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
+
+		rdrobust `outcome'_`var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1) fuzzy(inoffice_`var' sharpbw)
+
+		* Bandwidth
+		local bw_opt_p2_1y = e(h_l)
+		local bw_half_p2_1y = `bw_opt_p2_1y'/2
+		
+		* Robust
+		mat coef_est_ob_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `outcome'_`var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) ///
+			fuzzy(inoffice_`var' sharpbw)
+			
+		* Conventional
+		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
+		
+		local ++i
+		
+		}
+	local title: var label `outcome'
+
+	foreach m in ///
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
+
+		mat colnames coef_`m' = "+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" ///
+			"+6 yrs" "+7 yrs" "+8 yrs"
+			
+		mat colnames CI_`m' =  "+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" ///  
+			"+6 yrs" "+7 yrs" "+8 yrs"
+	}
+	
+		coefplot ///
+		(matrix(coef_est_ob_p1_ay), ci(CI_est_ob_p1_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_ay), ci(CI_est_hb_p1_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_frd_p1_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_ay), ci(CI_est_ob_p2_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_ay), ci(CI_est_hb_p2_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_frd_p2_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+				coefplot ///
+		(matrix(coef_est_ob_p1_1y), ci(CI_est_ob_p1_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_1y), ci(CI_est_hb_p1_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_frd_p1_`k'_1y_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_1y), ci(CI_est_ob_p2_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_1y), ci(CI_est_hb_p2_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_frd_p2_`k'_1y_`outcome'.pdf", as(pdf) replace
+
+	clear matrix
+	*}
+}
+}
+
+
+************************
+* H) RDD with covariates
+************************
+
+* Round 9
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+tab canton, gen(canton_)
+tab year, gen(year_)
+tostring year, gen(year_str)
+gen ct_yr=canton+year_str
+tab ct_yr, gen(ct_yr_)
+
+local covs "ct_yr_*"
+
+*local covs "canton_2 canton_3 canton_4 canton_5 canton_6 canton_7 canton_8 canton_9 canton_10 canton_11 canton_12 canton_13 canton_14 canton_15 canton_16 canton_17 canton_18 canton_19 canton_20 canton_21 canton_22 canton_23 canton_24 canton_25 canton_26 year_2 year_3 year_4 year_5 year_6 year_7 year_8 year_9 year_10 year_11 year_12 year_13 year_14 year_15 year_16 year_17 year_18 year_19 year_20 year_21 year_22"
 
 foreach outcome of varlist ///
 	i_all_c1 ///
@@ -1888,7 +2090,7 @@ foreach k in tri {
 		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
 
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
-			vce(cluster ID_num) all rho(1)
+			vce(cluster ID_num) all rho(1) covs(`covs')
 
 		* Bandwidth
 		local bw_opt_p1_ay = e(h_l)
@@ -1900,15 +2102,15 @@ foreach k in tri {
 		mat CI_est_ob_p1_ay[2,`i'] = e(ci_r_rb)
 
 		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
-			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) 
+			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) covs(`covs') 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
 
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
-			vce(cluster ID_num) all rho(1)
+			vce(cluster ID_num) all rho(1) covs(`covs')
 
 		* Bandwidth
 		local bw_opt_p2_ay = e(h_l)
@@ -1920,15 +2122,15 @@ foreach k in tri {
 		mat CI_est_ob_p2_ay[2,`i'] = e(ci_r_rb)
 
 		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
-			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) 
+			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) covs(`covs') 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
 		
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
-			kernel(`k') vce(cluster ID_num) all rho(1)
+			kernel(`k') vce(cluster ID_num) all rho(1) covs(`covs')
 
 		* Bandwidth
 		local bw_opt_p1_1y = e(h_l)
@@ -1941,15 +2143,15 @@ foreach k in tri {
 
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
-			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) 
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) covs(`covs') 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
-			kernel(`k') vce(cluster ID_num) all rho(1)
+			kernel(`k') vce(cluster ID_num) all rho(1) covs(`covs')
 
 		* Bandwidth
 		local bw_opt_p2_1y = e(h_l)
@@ -1962,9 +2164,9 @@ foreach k in tri {
 
 
 		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
-			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) 
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) covs(`covs') 
 			
-		* Robust
+		* Conventional
 		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
 		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
 		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
@@ -1995,7 +2197,7 @@ foreach k in tri {
 		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
 		title("`outcome': `title'" "1st order polynomial, `k', all elections")
-		graph export "$path_ol\figures\fig_p1_`k'_ay_`outcome'.pdf", as(pdf) replace
+		graph export "$path_ol\figures\fig_cov_p1_`k'_ay_`outcome'.pdf", as(pdf) replace
 		
 		coefplot ///
 		(matrix(coef_est_ob_p2_ay), ci(CI_est_ob_p2_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
@@ -2003,7 +2205,7 @@ foreach k in tri {
 		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
 		title("`outcome': `title'" "2nd order polynomial, `k', all elections")
-		graph export "$path_ol\figures\fig_p2_`k'_ay_`outcome'.pdf", as(pdf) replace
+		graph export "$path_ol\figures\fig_cov_p2_`k'_ay_`outcome'.pdf", as(pdf) replace
 		
 				coefplot ///
 		(matrix(coef_est_ob_p1_1y), ci(CI_est_ob_p1_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
@@ -2011,7 +2213,7 @@ foreach k in tri {
 		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
 		title("`outcome': `title'" "1st order polynomial, `k', first election")
-		graph export "$path_ol\figures\fig_p1_`k'_1y_`outcome'.pdf", as(pdf) replace
+		graph export "$path_ol\figures\fig_cov_p1_`k'_1y_`outcome'.pdf", as(pdf) replace
 		
 		coefplot ///
 		(matrix(coef_est_ob_p2_1y), ci(CI_est_ob_p2_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
@@ -2019,9 +2221,805 @@ foreach k in tri {
 		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
 		graphregion(fcolor(white) lcolor(white)) legend(off) ///
 		title("`outcome': `title'" "2nd order polynomial, `k', first election")
-		graph export "$path_ol\figures\fig_p2_`k'_1y_`outcome'.pdf", as(pdf) replace
+		graph export "$path_ol\figures\fig_cov_p2_`k'_1y_`outcome'.pdf", as(pdf) replace
 
 	clear matrix
 	*}
 }
 }
+
+
+
+**************************
+* I) Fixed small bandwidth
+**************************
+
+* Round 10
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+* define fixed bandwidth
+local fb 0.005
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+
+*	qui {
+	clear matrix
+
+foreach k in tri {
+	
+	foreach m in ///
+		est_fb_p1_ay ///
+		est_fb_p2_ay ///
+		est_fb_p1_1y ///
+		est_fb_p2_1y {
+	mat coef_`m' = J(1,20,.)
+	mat CI_`m' = J(2,20,.)
+	}
+	local i = 1
+
+	foreach var of varlist `outcome'_L4 `outcome'_L3 `outcome'_L2 `outcome'_L1 ///
+		`outcome' `outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4 ///
+		`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8 {
+
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) 
+			
+		mat coef_est_fb_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_fb_p1_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_fb_p1_ay[2,`i'] = e(ci_r_cl)
+
+		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) 
+			
+		mat coef_est_fb_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_fb_p2_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_fb_p2_ay[2,`i'] = e(ci_r_cl)
+		
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`fb') rho(1) 
+			
+		mat coef_est_fb_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_fb_p1_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_fb_p1_1y[2,`i'] = e(ci_r_cl)
+
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`fb') rho(1) 
+			
+		mat coef_est_fb_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_fb_p2_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_fb_p2_1y[2,`i'] = e(ci_r_cl)
+		
+		local ++i
+		
+		}
+	local title: var label `outcome'
+
+	foreach m in ///
+		est_fb_p1_ay ///
+		est_fb_p2_ay ///
+		est_fb_p1_1y ///
+		est_fb_p2_1y {
+
+		mat colnames coef_`m' = "-4 yrs" "-3 yrs" "-2 yrs" "-1 yr" ///
+			"0 yr" "+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" ///
+			"+6 yrs" "+7 yrs" "+8 yrs"
+			
+		mat colnames CI_`m' = "-4 yrs" "-3 yrs" "-2 yrs" "-1 yr" "0 yr" ///
+			"+1 yr" "+2 yrs" "+3 yrs" "+4 yrs" "+5 yrs" "+6 yrs" ///
+			"+7 yrs" "+8 yrs"
+	}
+	
+		coefplot ///
+		(matrix(coef_est_fb_p1_ay), ci(CI_est_fb_p1_ay) mcolor(blue) ciopts(lc(blue)) ), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_fb_p1_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_fb_p2_ay), ci(CI_est_fb_p2_ay) mcolor(blue) ciopts(lc(blue))), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_fb_p2_`k'_ay_`outcome'.pdf", as(pdf) replace
+		
+				coefplot ///
+		(matrix(coef_est_fb_p1_1y), ci(CI_est_fb_p1_1y) mcolor(blue) ciopts(lc(blue))), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_fb_p1_`k'_1y_`outcome'.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_fb_p2_1y), ci(CI_est_fb_p2_1y) mcolor(blue) ciopts(lc(blue))), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_fb_p2_`k'_1y_`outcome'.pdf", as(pdf) replace
+
+	clear matrix
+	*}
+}
+}
+
+
+*********************************************
+* (J) Analysis at term level with covariates
+*********************************************
+
+* Note: round 11
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+tab canton, gen(canton_)
+tab year, gen(year_)
+tostring year, gen(year_str)
+gen ct_yr=canton+year_str
+tab ct_yr, gen(ct_yr_)
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+local covs "ct_yr_*"
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 {
+	egen `outcome'_TL1=rowmax(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmax(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmax(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+	
+foreach outcome of varlist ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+	egen `outcome'_TL1=rowmean(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmean(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmean(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+
+*	qui {
+	clear matrix
+
+foreach k in tri {
+	
+	foreach m in ///
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
+	mat coef_`m' = J(1,20,.)
+	mat CI_`m' = J(2,20,.)
+	}
+	local i = 1
+
+	foreach var of varlist `outcome'_TL1 `outcome'_T0 `outcome'_TF1 {
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p1_ay = e(h_l)
+		local bw_half_p1_ay = `bw_opt_p1_ay'/2
+		
+		* Robust
+		mat coef_est_ob_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1_ay') rho(1) covs(`covs')
+			
+		* Conventional
+		mat coef_est_hb_p1_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_ay[2,`i'] = e(ci_r_cl)
+
+		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p2_ay = e(h_l)
+		local bw_half_p2_ay = `bw_opt_p2_ay'/2
+		
+		* Robust
+		mat coef_est_ob_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_ay[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_ay[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(2) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p2_ay') rho(1) covs(`covs')
+			
+		* Conventional
+		mat coef_est_hb_p2_ay[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_ay[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_ay[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p1_1y = e(h_l)
+		local bw_half_p1_1y = `bw_opt_p1_1y'/2
+		
+		* Robust
+		mat coef_est_ob_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p1_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p1_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(1) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p1_1y') rho(1) covs(`covs')
+			
+		* Conventional
+		mat coef_est_hb_p1_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p1_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p1_1y[2,`i'] = e(ci_r_cl)
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p2_1y = e(h_l)
+		local bw_half_p2_1y = `bw_opt_p2_1y'/2
+		
+		* Robust
+		mat coef_est_ob_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_ob_p2_1y[1,`i'] = e(ci_l_rb)
+		mat CI_est_ob_p2_1y[2,`i'] = e(ci_r_rb)
+
+
+		rdrobust `var' votemargin_rel if first_yr == 1, p(2) bwselect(mserd) ///
+			kernel(`k') vce(cluster ID_num) all h(`bw_half_p2_1y') rho(1) covs(`covs')
+			
+		* Conventional
+		mat coef_est_hb_p2_1y[1,`i']=e(tau_cl)
+		mat CI_est_hb_p2_1y[1,`i'] = e(ci_l_cl)
+		mat CI_est_hb_p2_1y[2,`i'] = e(ci_r_cl)
+		
+		local ++i
+		
+		}
+	local title: var label `outcome'
+
+	foreach m in ///
+		est_ob_p1_ay est_hb_p1_ay ///
+		est_ob_p2_ay est_hb_p2_ay ///
+		est_ob_p1_1y est_hb_p1_1y ///
+		est_ob_p2_1y est_hb_p2_1y {
+
+		mat colnames coef_`m' =  "-1 term" "0 term" "+1 term"
+		mat colnames CI_`m' =  "-1 term" "0 term" "+1 term"
+	}
+	
+		coefplot ///
+		(matrix(coef_est_ob_p1_ay), ci(CI_est_ob_p1_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_ay), ci(CI_est_hb_p1_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_ay_`outcome'_term_cov.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_ay), ci(CI_est_ob_p2_ay) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_ay), ci(CI_est_hb_p2_ay) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p2_`k'_ay_`outcome'_term_cov.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p1_1y), ci(CI_est_ob_p1_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p1_1y), ci(CI_est_hb_p1_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_p1_`k'_1y_`outcome'_term_cov.pdf", as(pdf) replace
+		
+		coefplot ///
+		(matrix(coef_est_ob_p2_1y), ci(CI_est_ob_p2_1y) mcolor(black) ciopts(lc(black)) offset(-0.1) ) ///
+		(matrix(coef_est_hb_p2_1y), ci(CI_est_hb_p2_1y) mcolor(blue) ciopts(lc(blue)) offset(0.1)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "2nd order polynomial, `k', first election")
+		graph export "$path_ol\figures\fig_p2_`k'_1y_`outcome'_term_cov.pdf", as(pdf) replace
+
+	clear matrix
+	*}
+}
+}
+
+
+
+*********************************************
+* (K) Combined plot
+*********************************************
+
+* Note: round 12
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+tostring year, gen(year_str)
+gen ct_yr=canton+year_str
+tab ct_yr, gen(ct_yr_)
+
+local covs "ct_yr_*"
+local fb 0.01
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 {
+	egen `outcome'_TL1=rowmax(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmax(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmax(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+	
+foreach outcome of varlist ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+	egen `outcome'_TL1=rowmean(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmean(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmean(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	i_prs_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 ///
+	n_prs_sum_c1 {
+
+
+*	qui {
+	clear matrix
+
+foreach k in tri {
+	
+	foreach m in est_ob_p1 ///
+				 est_hb_p1 est_hb_p1_cov ///
+				 est_fb_p1 est_fb_p1_cov {
+	mat coef_`m' = J(1,20,.)
+	mat CI95_`m' = J(2,20,.)
+	mat CI90_`m' = J(2,20,.)
+	}
+	local i = 1
+
+	foreach var of varlist `outcome'_TL1 `outcome'_T0 `outcome'_TF1 {
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) level(95) 
+
+		* Bandwidth
+		local bw_opt_p1 = e(h_l)
+		local bw_half_p1 = `bw_opt_p1'/2
+		
+		* Robust
+		mat coef_est_ob_p1[1,`i']=e(tau_rb)
+		mat CI95_est_ob_p1[1,`i'] = e(ci_l_rb)
+		mat CI95_est_ob_p1[2,`i'] = e(ci_r_rb)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) level(90)
+		
+		mat CI90_est_ob_p1[1,`i'] = e(ci_l_rb)
+		mat CI90_est_ob_p1[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) level(95) 
+			
+		* Conventional
+		mat coef_est_hb_p1[1,`i']=e(tau_cl)
+		mat CI95_est_hb_p1[1,`i'] = e(ci_l_cl)
+		mat CI95_est_hb_p1[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) level(90)
+				
+		mat CI90_est_hb_p1[1,`i'] = e(ci_l_cl)
+		mat CI90_est_hb_p1[2,`i'] = e(ci_r_cl)
+
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p1 = e(h_l)
+		local bw_half_p1 = `bw_opt_p1'/2
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) covs(`covs') level(95)
+			
+		* Conventional
+		mat coef_est_hb_p1_cov[1,`i']=e(tau_cl)
+		mat CI95_est_hb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI95_est_hb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) covs(`covs') level(90)
+			
+		mat CI90_est_hb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI90_est_hb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) level(95)
+			
+		* Conventional
+		mat coef_est_fb_p1[1,`i']=e(tau_cl)
+		mat CI95_est_fb_p1[1,`i'] = e(ci_l_cl)
+		mat CI95_est_fb_p1[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) level(90)	
+		
+		mat CI90_est_fb_p1[1,`i'] = e(ci_l_cl)
+		mat CI90_est_fb_p1[2,`i'] =  e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) covs(`covs') level(95)
+			
+		* Conventional
+		mat coef_est_fb_p1_cov[1,`i']=e(tau_cl)
+		mat CI95_est_fb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI95_est_fb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) covs(`covs') level(90)
+			
+		mat CI90_est_fb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI90_est_fb_p1_cov[2,`i'] = e(ci_r_cl)	
+		local ++i
+			}
+				
+	local title: var label `outcome'
+
+	foreach m in est_ob_p1 ///
+				 est_hb_p1 est_hb_p1_cov ///
+				 est_fb_p1 est_fb_p1_cov {
+		mat colnames coef_`m' =  "-1 term" "0 term" "+1 term"
+		mat colnames CI95_`m' =  "-1 term" "0 term" "+1 term" 
+		mat colnames CI90_`m' =  "-1 term" "0 term" "+1 term" 
+		}
+	
+		coefplot ///
+		(matrix(coef_est_ob_p1), ci(CI95_est_ob_p1) mcolor(black) ciopts(lc(black) lw(thin)) offset(-0.2)) ///
+		(matrix(coef_est_ob_p1), ci(CI90_est_ob_p1) mcolor(black) ciopts(lc(black) lw(thick)) offset(-0.2)) ///		
+		(matrix(coef_est_hb_p1), ci(CI95_est_hb_p1) mcolor(black) ciopts(lc(black) lw(thin)) offset(-0.1)) ///
+		(matrix(coef_est_hb_p1), ci(CI90_est_hb_p1) mcolor(black) ciopts(lc(black) lw(thick)) offset(-0.1)) ///		
+		(matrix(coef_est_hb_p1_cov), ci(CI95_est_hb_p1_cov) mcolor(black) ciopts(lc(black) lw(thin)) offset(0.0)) ///
+		(matrix(coef_est_hb_p1_cov), ci(CI90_est_hb_p1_cov) mcolor(black) ciopts(lc(black) lw(thick)) offset(0.0)) ///		
+		(matrix(coef_est_fb_p1), ci(CI95_est_fb_p1) mcolor(black) ciopts(lc(black) lw(thin)) offset(0.1)) ///
+		(matrix(coef_est_fb_p1), ci(CI90_est_fb_p1) mcolor(black) ciopts(lc(black) lw(thick)) offset(0.1)) ///		
+		(matrix(coef_est_fb_p1_cov), ci(CI95_est_fb_p1_cov) mcolor(black) ciopts(lc(black) lw(thin)) offset(0.2)) ///
+		(matrix(coef_est_fb_p1_cov), ci(CI90_est_fb_p1_cov) mcolor(black) ciopts(lc(black) lw(thick)) offset(0.2)), ///							
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_`outcome'_term_combined.pdf", as(pdf) replace		
+		
+		coefplot ///
+		(matrix(coef_est_ob_p1), ci(CI95_est_ob_p1) mcolor(black) ciopts(lc(black) lw(thin)) offset(-0.2)) ///
+		(matrix(coef_est_ob_p1), ci(CI90_est_ob_p1) mcolor(black) ciopts(lc(black) lw(thick)) offset(-0.2)) ///		
+		(matrix(coef_est_hb_p1), ci(CI95_est_hb_p1) mcolor(blue) ciopts(lc(blue) lw(thin)) offset(-0.1)) ///
+		(matrix(coef_est_hb_p1), ci(CI90_est_hb_p1) mcolor(blue) ciopts(lc(blue) lw(thick)) offset(-0.1)) ///		
+		(matrix(coef_est_hb_p1_cov), ci(CI95_est_hb_p1_cov) mcolor(blue) ciopts(lc(blue) lw(thin)) offset(0.0)) ///
+		(matrix(coef_est_hb_p1_cov), ci(CI90_est_hb_p1_cov) mcolor(blue) ciopts(lc(blue) lw(thick)) offset(0.0)) ///		
+		(matrix(coef_est_fb_p1), ci(CI95_est_fb_p1) mcolor(ebblue) ciopts(lc(ebblue) lw(thin)) offset(0.1)) ///
+		(matrix(coef_est_fb_p1), ci(CI90_est_fb_p1) mcolor(ebblue) ciopts(lc(ebblue) lw(thick)) offset(0.1)) ///		
+		(matrix(coef_est_fb_p1_cov), ci(CI95_est_fb_p1_cov) mcolor(ebblue) ciopts(lc(ebblue) lw(thin)) offset(0.2)) ///
+		(matrix(coef_est_fb_p1_cov), ci(CI90_est_fb_p1_cov) mcolor(ebblue) ciopts(lc(ebblue) lw(thick)) offset(0.2)), ///							
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_`outcome'_term_combined_color.pdf", as(pdf) replace	
+	clear matrix
+}
+}
+
+*********************************************
+* (L) Combined plot including population
+*********************************************
+
+* Note: round 13
+* Use "rowmean" instead of "rowmax" for extensive margin variable. 
+* Interpretation: not probability of having a mandate in at least one year of 
+* the legislative period, but rather share of years with at least one mandate. 
+* Reason: We cannot create an analogous variable for the general population 
+* w/out having panel data for the general population.
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+tostring year, gen(year_str)
+gen ct_yr=canton+year_str
+tab ct_yr, gen(ct_yr_)
+
+local covs "ct_yr_*"
+local fb 0.01
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1  {
+	egen `outcome'_TL1=rowmean(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmean(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmean(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+	
+foreach outcome of varlist ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1  {
+	egen `outcome'_TL1=rowmean(`outcome'_L3 `outcome'_L2 `outcome'_L1 `outcome')
+	egen `outcome'_T0=rowmean(`outcome'_F1 `outcome'_F2 `outcome'_F3 `outcome'_F4)
+	egen `outcome'_TF1=rowmean(`outcome'_F5 `outcome'_F6 `outcome'_F7 `outcome'_F8)
+}
+
+foreach outcome of varlist ///
+	i_all_c1 ///
+	i_lrg_c1 ///
+	i_sml_c1 ///
+	n_all_sum_c1 ///
+	n_lrg_sum_c1 ///
+	n_sml_sum_c1 {
+
+	clear matrix	
+	mat coef_cand = J(1,20,.)
+	mat CI95_cand = J(2,20,.)
+	mat CI90_cand = J(2,20,.)
+	
+	reg `outcome'_T0 elected, vce(cluster ID_num)
+	
+	mat coef_cand[1,2] = _b[elected]
+	mat CI95_cand[1,2] = _b[elected] - invttail(e(df_r),0.025)*_se[elected]
+	mat CI95_cand[2,2] = _b[elected] + invttail(e(df_r),0.025)*_se[elected]
+	mat CI90_cand[1,2] = _b[elected] - invttail(e(df_r),0.05)*_se[elected]
+	mat CI90_cand[2,2] = _b[elected] + invttail(e(df_r),0.05)*_se[elected]
+	
+foreach k in tri {
+	
+	foreach m in est_ob_p1 ///
+				 est_hb_p1 est_hb_p1_cov ///
+				 est_fb_p1 est_fb_p1_cov {
+	mat coef_`m' = J(1,20,.)
+	mat CI95_`m' = J(2,20,.)
+	mat CI90_`m' = J(2,20,.)
+	}
+	local i = 1
+
+	foreach var of varlist `outcome'_TL1 `outcome'_T0 `outcome'_TF1 {
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) level(95) 
+
+		* Bandwidth
+		local bw_opt_p1 = e(h_l)
+		local bw_half_p1 = `bw_opt_p1'/2
+		
+		* Robust
+		mat coef_est_ob_p1[1,`i'] = e(tau_rb)
+		mat CI95_est_ob_p1[1,`i'] = e(ci_l_rb)
+		mat CI95_est_ob_p1[2,`i'] = e(ci_r_rb)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) level(90)
+		
+		mat CI90_est_ob_p1[1,`i'] = e(ci_l_rb)
+		mat CI90_est_ob_p1[2,`i'] = e(ci_r_rb)
+
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) level(95) 
+			
+		* Conventional
+		mat coef_est_hb_p1[1,`i'] = e(tau_cl)
+		mat CI95_est_hb_p1[1,`i'] = e(ci_l_cl)
+		mat CI95_est_hb_p1[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) level(90)
+				
+		mat CI90_est_hb_p1[1,`i'] = e(ci_l_cl)
+		mat CI90_est_hb_p1[2,`i'] = e(ci_r_cl)
+
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all rho(1) covs(`covs')
+
+		* Bandwidth
+		local bw_opt_p1 = e(h_l)
+		local bw_half_p1 = `bw_opt_p1'/2
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) covs(`covs') level(95)
+			
+		* Conventional
+		mat coef_est_hb_p1_cov[1,`i'] = e(tau_cl)
+		mat CI95_est_hb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI95_est_hb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) bwselect(mserd) kernel(`k') ///
+			vce(cluster ID_num) all h(`bw_half_p1') rho(1) covs(`covs') level(90)
+			
+		mat CI90_est_hb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI90_est_hb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) level(95)
+			
+		* Conventional
+		mat coef_est_fb_p1[1,`i'] = e(tau_cl)
+		mat CI95_est_fb_p1[1,`i'] = e(ci_l_cl)
+		mat CI95_est_fb_p1[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) level(90)	
+		
+		mat CI90_est_fb_p1[1,`i'] = e(ci_l_cl)
+		mat CI90_est_fb_p1[2,`i'] =  e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) covs(`covs') level(95)
+			
+		* Conventional
+		mat coef_est_fb_p1_cov[1,`i'] = e(tau_cl)
+		mat CI95_est_fb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI95_est_fb_p1_cov[2,`i'] = e(ci_r_cl)
+		
+		rdrobust `var' votemargin_rel, p(1) kernel(`k') ///
+			vce(cluster ID_num) all h(`fb') rho(1) covs(`covs') level(90)
+			
+		mat CI90_est_fb_p1_cov[1,`i'] = e(ci_l_cl)
+		mat CI90_est_fb_p1_cov[2,`i'] = e(ci_r_cl)	
+		local ++i
+			}
+				
+	local title: var label `outcome'
+
+	foreach m in est_ob_p1 ///
+				 est_hb_p1 est_hb_p1_cov ///
+				 est_fb_p1 est_fb_p1_cov {
+		mat colnames coef_`m' =  "-1 term" "0 term" "+1 term"
+		mat colnames CI95_`m' =  "-1 term" "0 term" "+1 term" 
+		mat colnames CI90_`m' =  "-1 term" "0 term" "+1 term" 
+		}
+	
+	preserve
+	use "$path\02_Processed_data\21_Population\population_data.dta", clear
+
+	replace ellegperiod = 0 if ellegperiod == .
+		
+		mat coef_pop = J(1,20,.)
+		mat CI95_pop = J(2,20,.)
+		mat CI90_pop = J(2,20,.)
+		
+		reg `outcome' ellegperiod, robust
+		
+		mat coef_pop[1,2] = _b[ellegperiod]
+		mat CI95_pop[1,2] = _b[ellegperiod] - invttail(e(df_r),0.025)*_se[ellegperiod]
+		mat CI95_pop[2,2] = _b[ellegperiod] + invttail(e(df_r),0.025)*_se[ellegperiod]
+		mat CI90_pop[1,2] = _b[ellegperiod] - invttail(e(df_r),0.05)*_se[ellegperiod]
+		mat CI90_pop[2,2] = _b[ellegperiod] + invttail(e(df_r),0.05)*_se[ellegperiod]
+	restore
+	
+		mat colnames coef_pop =  "-1 term" "0 term" "+1 term"
+		mat colnames CI95_pop =  "-1 term" "0 term" "+1 term" 
+		mat colnames CI90_pop =  "-1 term" "0 term" "+1 term" 
+		mat colnames coef_cand =  "-1 term" "0 term" "+1 term"
+		mat colnames CI95_cand =  "-1 term" "0 term" "+1 term" 
+		mat colnames CI90_cand =  "-1 term" "0 term" "+1 term" 	
+	
+		coefplot ///
+		(matrix(coef_est_ob_p1), ci(CI95_est_ob_p1) mcolor(black) ciopts(lc(black) lw(medthin)) offset(-0.2)) ///
+		(matrix(coef_est_ob_p1), ci(CI90_est_ob_p1) mcolor(black) ciopts(lc(black) lw(medthick)) offset(-0.2)) ///		
+		(matrix(coef_est_hb_p1), ci(CI95_est_hb_p1) mcolor(black) ciopts(lc(black) lw(medthin)) offset(-0.1)) ///
+		(matrix(coef_est_hb_p1), ci(CI90_est_hb_p1) mcolor(black) ciopts(lc(black) lw(medthick)) offset(-0.1)) ///		
+		(matrix(coef_est_hb_p1_cov), ci(CI95_est_hb_p1_cov) mcolor(black) ciopts(lc(black) lw(medthin)) offset(0.0)) ///
+		(matrix(coef_est_hb_p1_cov), ci(CI90_est_hb_p1_cov) mcolor(black) ciopts(lc(black) lw(medthick)) offset(0.0)) ///		
+		(matrix(coef_est_fb_p1), ci(CI95_est_fb_p1) mcolor(black) ciopts(lc(black) lw(medthin)) offset(0.1)) ///
+		(matrix(coef_est_fb_p1), ci(CI90_est_fb_p1) mcolor(black) ciopts(lc(black) lw(medthick)) offset(0.1)) ///		
+		(matrix(coef_est_fb_p1_cov), ci(CI95_est_fb_p1_cov) mcolor(black) ciopts(lc(black) lw(medthin)) offset(0.2)) ///
+		(matrix(coef_est_fb_p1_cov), ci(CI90_est_fb_p1_cov) mcolor(black) ciopts(lc(black) lw(medthick)) offset(0.2)) ///		
+		(matrix(coef_cand), ci(CI95_cand) mcolor(black) ciopts(lc(black) lw(medthin)) offset(-0.3)) ///
+		(matrix(coef_cand), ci(CI90_cand) mcolor(black) ciopts(lc(black) lw(medthick)) offset(-0.3)) ///	
+		(matrix(coef_pop), ci(CI95_pop) mcolor(black) ciopts(lc(black) lw(medthin)) offset(-0.4)) ///
+		(matrix(coef_pop), ci(CI90_pop) mcolor(black) ciopts(lc(black) lw(medthick)) offset(-0.4)), ///	
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_`outcome'_term_pop.pdf", as(pdf) replace		
+		
+		coefplot ///
+		(matrix(coef_est_ob_p1), ci(CI95_est_ob_p1) mcolor(black) ciopts(lc(black) lw(medthin)) offset(-0.2)) ///
+		(matrix(coef_est_ob_p1), ci(CI90_est_ob_p1) mcolor(black) ciopts(lc(black) lw(medthick)) offset(-0.2)) ///		
+		(matrix(coef_est_hb_p1), ci(CI95_est_hb_p1) mcolor(blue) ciopts(lc(blue) lw(medthin)) offset(-0.1)) ///
+		(matrix(coef_est_hb_p1), ci(CI90_est_hb_p1) mcolor(blue) ciopts(lc(blue) lw(medthick)) offset(-0.1)) ///		
+		(matrix(coef_est_hb_p1_cov), ci(CI95_est_hb_p1_cov) mcolor(blue) ciopts(lc(blue) lw(medthin)) offset(0.0)) ///
+		(matrix(coef_est_hb_p1_cov), ci(CI90_est_hb_p1_cov) mcolor(blue) ciopts(lc(blue) lw(medthick)) offset(0.0)) ///		
+		(matrix(coef_est_fb_p1), ci(CI95_est_fb_p1) mcolor(ebblue) ciopts(lc(ebblue) lw(medthin)) offset(0.1)) ///
+		(matrix(coef_est_fb_p1), ci(CI90_est_fb_p1) mcolor(ebblue) ciopts(lc(ebblue) lw(medthick)) offset(0.1)) ///		
+		(matrix(coef_est_fb_p1_cov), ci(CI95_est_fb_p1_cov) mcolor(ebblue) ciopts(lc(ebblue) lw(medthin)) offset(0.2)) ///
+		(matrix(coef_est_fb_p1_cov), ci(CI90_est_fb_p1_cov) mcolor(ebblue) ciopts(lc(ebblue) lw(medthick)) offset(0.2)) ///
+		(matrix(coef_cand), ci(CI95_cand) mcolor(lavender) ciopts(lc(lavender) lw(medthin)) offset(-0.3)) ///
+		(matrix(coef_cand), ci(CI90_cand) mcolor(lavender) ciopts(lc(lavender) lw(medthick)) offset(-0.3)) ///
+		(matrix(coef_pop), ci(CI95_pop) mcolor(purple) ciopts(lc(purple) lw(medthin)) offset(-0.4)) ///
+		(matrix(coef_pop), ci(CI90_pop) mcolor(purple) ciopts(lc(purple) lw(medthick)) offset(-0.4)), ///
+		vertical nolabel yline(0) ylabel(, angle(horizontal) gsty(dot)) ///
+		graphregion(fcolor(white) lcolor(white)) legend(off) ///
+		title("`outcome': `title'" "1st order polynomial, `k', all elections")
+		graph export "$path_ol\figures\fig_p1_`k'_`outcome'_term_pop_color.pdf", as(pdf) replace	
+	clear matrix
+}
+}
+
+
+
+***************
+* Z) RDD plot
+***************
+
+
+* Note: For the definition of incumbent status: We opt for a simple solution with a 
+*		common reference date instead of  year-specific reference date. We guess 
+*		that this only marginally  affects the first stage and has no effect on 
+* 		the reduced form. 
+
+use "$path\02_Processed_data\Politicians_Directorships_1931-2017.dta", clear
+keep if votemargin_rel < .
+
+bysort ID: egen min_yr=min(year)
+g first_yr = 0
+replace first_yr = 1 if year == min_yr & cand_before1931 == 0
+
+local outcome i_all_c1_L4
+
+rdrobust `outcome' votemargin_rel if first_yr==1, p(1) bwselect(mserd) kernel(tri) ///
+	vce(cluster ID_num) all rho(1)
+	
+local bw_opt_p1_1y = e(h_l)
+local bw_half_p1_1y = `bw_opt_p1_1y'/2
+
+cap rdplot `outcome' votemargin_rel  ///
+	if -`bw_half_p1_1y' <= votemargin_rel & votemargin_rel <= `bw_half_p1_1y' & first_yr==1, ///
+	p(1) kernel(triangular) binselect(qs) ///
+	graph_options(ylabel(, angle(horizontal) gsty(dot)) ///
+	graphregion(fcolor(white) lcolor(white)) legend(off)) 

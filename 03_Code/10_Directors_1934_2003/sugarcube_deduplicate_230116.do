@@ -1971,7 +1971,7 @@ destring capital_corrected, replace
 save "$dump\02_Processed_data\10_Directors_1934_2003\21_Capital\comp_`y'_missing_capital_mun_corrected.dta", replace
 }
 
-*Put back into crosssections
+*Put back into cross-sections
 foreach y in 1934 1943 1960 1962 1963 1964 1965 1966 1969 1972 1975 1979 1980 1981 1982 1983 1984 1985 1986 1987 1988 1989 1990 1991 1992 1993 1994 1995 1996 1997 1998 1999 2000 2001 2002 2003 {
 use "$dump\02_Processed_data\10_Directors_1934_2003\21_Capital\comp_`y'_capital_mun.dta", clear
 merge 1:1 CID year using "$dump\02_Processed_data\10_Directors_1934_2003\21_Capital\comp_`y'_missing_capital_mun_corrected.dta", keep (1 3) nogen

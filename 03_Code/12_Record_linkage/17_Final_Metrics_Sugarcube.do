@@ -81,13 +81,13 @@ keep ID year name firstname birthyear gdename
 duplicates drop ID, force
 rename ID id_0
 
+save "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_wide.dta", replace
+
 erase "$path\02_Processed_data\01_Elections_1931_1975\name.dta"
 erase "$path\02_Processed_data\01_Elections_1931_1975\firstname.dta"
 erase "$path\02_Processed_data\01_Elections_1931_1975\birthyear.dta"
 erase "$path\02_Processed_data\01_Elections_1931_1975\job.dta"
 erase "$path\02_Processed_data\01_Elections_1931_1975\gdename.dta"
-
-save "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_wide.dta", replace
 
 **********************
 * B) Read in Sugarcube
@@ -139,40 +139,9 @@ keep id_0 id_1 year_1
 save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_test_set_randomized_buckets_0.65.dta", replace
 
 
-insheet using ///
-	"$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_validation_set_randomized_buckets_0.35.csv", ///
-	delim(",") clear
-* a) Rename variables
-rename id_polit id_0 
-rename e_id_polit e_cntr_w_0
-rename n_id_polit n_cntr_w_0
-rename id_sug id_1
-rename year_sug year_1 
-rename e_id_sug e_cntr_w_1
-rename n_id_sug n_cntr_w_1
-* b) Save all politician IDs in validation set
-preserve
-duplicates drop id_0, force
-keep id_0
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_validation_set_polids.dta", replace
-restore
-* c) Drop all those with no match in GT data
-drop if id_1==.
-* d) Drop duplicates
-* Note: Drop all duplicate observations of politicians who live in different municipalities
-* across years or have more than one geolocation in Sugarcube (Rüti problem) but are 
-* matched to the same person in the Sugarcube data. 
-duplicates drop id_0 id_1 year_1, force
-* e) Keep only relevant variables
-keep id_0 id_1 year_1 
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_validation_set_randomized_buckets_0.35.dta", replace
-
-
 *********************************
 * D) Read in record linkage files
 *********************************
-
-* (i) Read in RL output after postprocessing
 
 use "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\RL_Output_after_FP_and_FN.dta", clear
 
@@ -187,46 +156,6 @@ keep id_0 id_1 year_1
 save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\RL_Output_after_FP_and_FN_no_duplicates_temp.dta", replace
 
 
-* (ii) Read in RL output before postprocessing
-
-insheet using ///
-"$path\02_Processed_data\12_Record_linkage\02_Sugarcube\extended_result_set_15122022-100518bc-12f0-4d5d-8b42-1f4484952a2a-01092023.csv", ///
-	delim(",") clear
-	
-rename clusterid cluster_id
-rename linkscore link_score
-	
-* a) Keep politician data
-
-preserve
-keep if sourcefile==0
-keep cluster_id link_score id e_cntr_w n_cntr_w
-rename id id_0 
-rename e_cntr_w e_cntr_w_0 
-rename n_cntr_w n_cntr_w_0 
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\rl_sugarcube_nr.dta", replace
-restore
-
-* b) Keep Sugarcube data
-
-keep if sourcefile==1
-keep cluster_id	e_id n_id id year firstname name
-
-rename id id_1 
-rename year year_1 
-rename e_id e_cntr_w_1 
-rename n_id n_cntr_w_1 
-rename firstname firstname_1 
-rename name name_1 
-
-* c) Merge RL data
-
-merge m:1 cluster_id using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\rl_sugarcube_nr.dta"
-drop _merge
-order cluster_id link_score id_0 e_cntr_w_0 n_cntr_w_0  id_1 year e_cntr_w_1 n_cntr_w_1 
-duplicates drop id_0 id_1 year_1, force
-keep id_0 id_1 year_1
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\rl_sugarcube_cortable.dta", replace
 
 
 *****************************************************************************
@@ -245,8 +174,6 @@ tostring id_1, replace
 * b) Merge RL output
 
 merge 1:1 id_0 id_1 year_1 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\RL_Output_after_FP_and_FN_no_duplicates_temp.dta", gen(merge_testset)
-
-*merge 1:1 id_0 id_1 year_1 using "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\rl_sugarcube_cortable.dta", gen(merge_testset)
 
 
 * c) Merge politician IDs in test set and drop all those not in test set
@@ -343,13 +270,14 @@ gen f1_lk = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP 
 rename id_0 ID
 keep ID year prc_lk rcl_lk f1_lk
 
-save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_link.dta", replace
-restore
-
 sum prc_lk if year==1939 | year==1943 | year==1947 | year==1951 | year==1955 | /// 
 	year==1959 | year==1963 | year==1967 | year==1971 | year==1975 | ///
 	year==1979 | year==1983 | year==1987 | year==1991 | ///
 	year==1995 | year==1999 | year==2003
+
+save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_link.dta", replace
+restore
+
 
 
 * (ii) Test set at mandate level
@@ -374,7 +302,7 @@ collapse (sum) TP FP FN
 gen precision=TP/(FP+TP)
 gen recall=TP/(FN+TP)
 gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  TP FP FN
+sum TP FP FN precision recall F1  
 restore 
 
 preserve
@@ -404,7 +332,7 @@ collapse (sum) TP FP FN
 gen precision=TP/(FP+TP)
 gen recall=TP/(FN+TP)
 gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1  TP FP FN
+sum TP FP FN precision recall F1  
 restore
 
 preserve
@@ -429,3 +357,10 @@ keep ID year prc_mn rcl_mn f1_mn
 
 save "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_mandate.dta", replace
 
+erase "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\RL_Output_after_FP_and_FN_no_duplicates_temp.dta"
+erase "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_test_set_polids.dta"
+erase "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\sugarcube_test_set_randomized_buckets_0.65.dta"
+erase "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\pr_link.dta"
+erase "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_wide.dta"
+erase "$path\02_Processed_data\12_Record_linkage\02_Sugarcube\nr_elected.dta", gen(merge_elected)
+erase "$path\02_Processed_data\02_Elections_1971_2015\OfficeYears_GT1.dta", gen(merge_offyears)

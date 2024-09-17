@@ -15,7 +15,7 @@ collapse (sum) TP FP FN
 gen precision = (TP / (TP + FP))
 gen recall = (TP / (TP + FN))
 gen F1 = (2 * (TP / (TP + FP)) * (TP / (TP + FN))) / ((TP / (TP + FP)) + (TP / (TP + FN)))
-sum precision recall F1
+sum TP FP FN precision recall F1
 restore
 
 * Metrics per Year
