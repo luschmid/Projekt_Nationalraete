@@ -1,11 +1,12 @@
 install.packages(c("openxlsx", "devtools", "igraph", "bipartite", "asnipe", "assortnet", "ggplot2", "ggmap", "rnetcarto", "ecodist", "igraphdata", "statnet", "RColorBrewer", "tidyverse", "xlsx"))
 #?graph_from_adjacency_matrix
+install.packages("readstata13")
+
 setwd("C:/Users/schmutzy/Desktop/Projekt Nationalräte/02_Processed_data/10_Directors_1934_2003/14_Network_OneMode")
 
 library(openxlsx)
 library(haven)
 library(igraph) #load the package
-install.packages("readstata13")
 library(readstata13)
 library(xlsx)
 
@@ -44,9 +45,15 @@ write.xlsx(firm_unimode, file = "firm_unimode_1934.xlsx", sheetName = "firms",
 #write.csv(firm_unimode_weight, file = "firm_unimode_w_1934.csv")
 #write.csv(firm_unimode, file = "firm_unimode_1934.csv")
 
-firm_eg=graph_from_data_frame(firm_unimode, directed=FALSE)
+firm_eg=graph_from_data_frame(firm_unimode_weight, directed=FALSE)
 firm_eg
 firm_el <- as_edgelist(firm_eg)
+
+library(igraph)
+
+# Check the weight attribute
+summary(E(firm_eg)$weight)
+
 
 # 1943
 
@@ -55,9 +62,6 @@ eg=graph_from_data_frame(edgeliste_1943_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1943_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -94,9 +98,6 @@ eg=graph_from_data_frame(edgeliste_1960_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1960_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -133,9 +134,6 @@ eg=graph_from_data_frame(edgeliste_1962_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1962_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -172,9 +170,6 @@ eg=graph_from_data_frame(edgeliste_1963_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1963_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -211,10 +206,6 @@ eg=graph_from_data_frame(edgeliste_1964_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
-
 pers_unimode_weight <- project_table(edgeliste_1964_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
 
@@ -250,9 +241,6 @@ eg=graph_from_data_frame(edgeliste_1965_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1965_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -289,9 +277,6 @@ eg=graph_from_data_frame(edgeliste_1966_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1966_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -328,9 +313,6 @@ eg=graph_from_data_frame(edgeliste_1969_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1969_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -367,9 +349,6 @@ eg=graph_from_data_frame(edgeliste_1972_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1972_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -406,9 +385,6 @@ eg=graph_from_data_frame(edgeliste_1975_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1975_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -445,9 +421,6 @@ eg=graph_from_data_frame(edgeliste_1979_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1979_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -484,9 +457,6 @@ eg=graph_from_data_frame(edgeliste_1980_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1980_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -523,9 +493,6 @@ eg=graph_from_data_frame(edgeliste_1981_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1981_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -562,9 +529,6 @@ eg=graph_from_data_frame(edgeliste_1982_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1982_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -601,9 +565,6 @@ eg=graph_from_data_frame(edgeliste_1983_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1983_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -640,9 +601,6 @@ eg=graph_from_data_frame(edgeliste_1984_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1984_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -679,9 +637,6 @@ eg=graph_from_data_frame(edgeliste_1985_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1985_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -718,9 +673,6 @@ eg=graph_from_data_frame(edgeliste_1986_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1986_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -757,9 +709,6 @@ eg=graph_from_data_frame(edgeliste_1987_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1987_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -796,9 +745,6 @@ eg=graph_from_data_frame(edgeliste_1988_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1988_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -835,9 +781,6 @@ eg=graph_from_data_frame(edgeliste_1989_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1989_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -874,9 +817,6 @@ eg=graph_from_data_frame(edgeliste_1990_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1990_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -913,9 +853,6 @@ eg=graph_from_data_frame(edgeliste_1991_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1991_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -952,9 +889,6 @@ eg=graph_from_data_frame(edgeliste_1992_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1992_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -991,9 +925,6 @@ eg=graph_from_data_frame(edgeliste_1993_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1993_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1030,10 +961,6 @@ eg=graph_from_data_frame(edgeliste_1994_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
-
 pers_unimode_weight <- project_table(edgeliste_1994_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
 
@@ -1069,9 +996,6 @@ eg=graph_from_data_frame(edgeliste_1995_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1995_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1108,9 +1032,6 @@ eg=graph_from_data_frame(edgeliste_1996_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1996_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1147,9 +1068,6 @@ eg=graph_from_data_frame(edgeliste_1997_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1997_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1186,9 +1104,6 @@ eg=graph_from_data_frame(edgeliste_1998_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1998_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1225,9 +1140,6 @@ eg=graph_from_data_frame(edgeliste_1999_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_1999_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1264,9 +1176,7 @@ eg=graph_from_data_frame(edgeliste_2000_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
+
 
 pers_unimode_weight <- project_table(edgeliste_2000_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1303,9 +1213,6 @@ eg=graph_from_data_frame(edgeliste_2001_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_2001_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1342,9 +1249,6 @@ eg=graph_from_data_frame(edgeliste_2002_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_2002_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1381,9 +1285,6 @@ eg=graph_from_data_frame(edgeliste_2003_bi, directed=FALSE)
 eg
 el <- as_edgelist(eg)
 
-#Transforming bipartite network into unimodal
-devtools::install_github("mdlincoln/projectoR")
-library(projectoR)
 
 pers_unimode_weight <- project_table(edgeliste_2003_bi, joining_col = "N_UCID")
 pers_unimode = subset(pers_unimode_weight, select = -c(weight))
@@ -1413,73 +1314,3 @@ firm_eg=graph_from_data_frame(firm_unimode, directed=FALSE)
 firm_eg
 firm_el <- as_edgelist(firm_eg)
 
-################################################################################
-
-#igraph commands
-
-plot(eg, edge.arrow.size=0.05, vertex.size = 0.1, vertex.label="", xlab = "1934 : Firm Networks and interlocks")
-plot(firm_eg, edge.arrow.size=0.05, vertex.size = 0.1, vertex.label="", xlab = "1934 : Firm Networks")
-plot(pers_eg, edge.arrow.size=0.05, vertex.size = 0.1, vertex.label="", xlab = "1934 : Interlocks")
-
-#Bipartite network info
-diameter(eg)
-is_simple(eg)
-is_connected(eg)
-degree_distribution(eg, cumulative = TRUE)
-plot(degree_distribution(eg, cumulative = TRUE), col="orange")
-hist(degree(eg))
-abline(v=mean(degree(eg)), col="red")
-mean(degree(eg))
-
-#Firm network info
-degree(firm_eg)
-gsize(firm_eg) # nb of edges
-gorder(firm_eg) # how many nodes ?
-diameter(firm_eg)
-is_simple(firm_eg)
-is_connected(firm_eg)
-degree_distribution(firm_eg, cumulative = TRUE)
-plot(degree_distribution(firm_eg, cumulative = TRUE), col="orange")
-hist(degree(firm_eg))
-abline(v=mean(degree(firm_eg)), col="red")
-mean(degree(firm_eg))
-
-#Pers network info
-degree(pers_eg)
-gsize(pers_eg) # nb of edges
-gorder(pers_eg) # how many nodes ?
-diameter(pers_eg)
-is_simple(pers_eg)
-is_connected(pers_eg)
-degree_distribution(pers_eg, cumulative = TRUE)
-plot(degree_distribution(pers_eg, cumulative = TRUE), col="orange")
-hist(degree(pers_eg))
-abline(v=mean(degree(pers_eg)), col="red")
-mean(degree(pers_eg))
-
-################################################################################
-#Code copied from UPF crash course : sort and update!
-
-#--------------------- Degree and degree distribution ------------------------------
-
-# if we have a matrice: rowSums(A)
-# if we have a matrice: colSums(A)
-
-degree(eg)
-gsize(eg) # nb of edges
-gorder(eg) # how many nodes ?
-degree(firm_eg, normalized = TRUE) # the result is divided by n-1, where n is the number of vertices in the graph.
-sum(degree(eg, normalized = TRUE))
-
-degree_distribution(eg)
-sum(degree_distribution(eg))
-
-deg <- degree(firm_eg, mode="all")
-deg.dist <- degree_distribution(firm_eg, cumulative=T, mode="all")
-plot( x=0:max(deg), y=1-deg.dist, pch=19, cex=1.2, col="orange",
-      xlab="Degree", ylab="Cumulative Frequency")
-
-farthest_vertices(firm_eg)
-C6180_C16860 <- get.shortest.paths(firm_eg, V(firm_eg)[name=="d"],
-                                 V(firm_eg)[name=="c"],
-                                 mode="out", output="both")

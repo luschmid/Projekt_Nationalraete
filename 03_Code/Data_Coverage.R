@@ -15,6 +15,7 @@ library(janitor)
 library(vtable)
 
 path <- "C:/Schmidlu/Dropbox/Projekt Nationalräte"
+path_ol <- "C:/Schmidlu/Dropbox/Apps/Overleaf/Political_Rents"
 setwd(path)
 
 #----------------------------------
@@ -57,26 +58,27 @@ out_df <-
 out_df$year_pol <- year_pol_all  
 
 out_df_long <- out_df %>%
-  pivot_longer(cols=c(1:13),names_to = "horizon")
+  pivot_longer(cols=c(1:13),names_to = "horizon") %>%
+  mutate(horizon=as.numeric(as.character(horizon)))
 
 # (v) Heat map
 
 ggplot(out_df_long, aes(y=year_pol, x=horizon)) +
   geom_tile(aes(fill = value)) +
-  geom_text(aes(label = round(value, 1))) +
+  #geom_text(aes(label = round(value, 1))) +
   scale_fill_gradient(low = "white", high = "darkgreen") + 
   theme_minimal() +
   scale_y_continuous(breaks=year_pol_all) +
+  scale_x_continuous(breaks=c(-4:8)) +
   ylab("Year") + xlab("Horizon") + 
   theme(legend.position="none")
   
-ggsave("./04_Results/04_Political_Rents/Data_Coverage.pdf",width = 8,height = 8)
+ggsave(paste0(path_ol,"/figures/Data_Coverage.pdf"),width = 8,height = 8)
 
 out_horizon <- out_df_long %>%
   filter(value==1) %>%
   group_by(horizon) %>%
-  summarize(year_mean=mean(year_pol)) %>%
-  mutate(ordering=ifelse)
+  summarize(year_mean=mean(year_pol)) 
 
 ggplot(out_horizon, aes(y=year_mean, x=horizon)) +
   geom_point()  +

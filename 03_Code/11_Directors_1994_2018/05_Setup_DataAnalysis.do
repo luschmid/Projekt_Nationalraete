@@ -1,7 +1,7 @@
 clear
 cap log close
 set more 1
-version 17
+version 18
 
 global dataNR "E:\12. Cloud\Dropbox\Projekt Nationalräte\02_Processed_data\"
 global dataRL "E:\12. Cloud\Dropbox\Record Linkage\02_Data\"
@@ -11,8 +11,7 @@ global tempBis "C:\Users\schelkem\BisnodeSetup_tmp\"
 *global dataRL "C:\Current\Dropbox\Record Linkage\02_Data\"
 *global tempBis "C:\BisnodeSetup_tmp\"
 
-mkdir "C:\Users\schelkem\BisnodeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
-* mkdir "C:\BisnodeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
+*mkdir "C:\Users\schelkem\BisnodeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
 
 
 **** Setup Bisnode data for analyses ****
@@ -136,7 +135,7 @@ merge m:1 VRid using "$tempBis\RL_bisnodeIDs_NRids.dta"
 keep if _merge == 3
 drop _merge
 
-keep VRid duns vorname nachname W_PLZ4 wohnort wohnland nationalität geburtstag gremium rechtsform funktion eintrittdatum austrittdatum E_CNTR_w N_CNTR_w uid handelsregisternummer firma handelsname plzdomiziladresse ortdomiziladresse kantondomiziladresse nogacode unterschrift kapitalnominalag kapitaleinbezahltag NRid_* NRlinks
+keep VRid duns vorname nachname W_PLZ4 wohnort wohnland nationalität geburtstag gremium rechtsform funktion eintrittdatum austrittdatum E_CNTR_w N_CNTR_w uid handelsregisternummer firma handelsname plzdomiziladresse ortdomiziladresse kantondomiziladresse nogacode unterschrift kapitalnominalag kapitaleinbezahltag NRid_* NRlinks SIX*
 save "$tempBis\RL_G7_Bisnode_Person-Firmen_Geo.dta", replace
 
 *** Step 3: Panel structure
@@ -218,6 +217,10 @@ rename nachname name_bis
 rename wohnort residence_bis
 keep if year>1993 & year<2019
 
+* SIX dummy: year coding
+replace SIX = . if SIX_min > year & SIX != .
+replace SIX = . if SIX_max < year & SIX != .
+drop SIX_*
 save "$tempBis\RL_Bisnode-NRids_1994-2018_tmp.dta", replace
 
 *** Step 4: merge NR info on NRids
@@ -328,30 +331,49 @@ label var eleyear "Election year"
 
 duplicates report NRid VRid year duns funktion // are there duplicate entries for the same person (NRid & VRid) in the same company (duns) and same function per year?  (no!)
 
+* proportion of missing capital information (footnote 15, p. 11)
+preserve
+drop if duns == .
+gen cap_tmp = 1 if kapitalnominalag<.
+replace cap_tmp = 0 if kapitalnominalag==.
+tab cap_tmp
+/*
+. tab cap_tmp
+
+    cap_tmp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        184        0.07        0.07
+          1 |    253,598       99.93      100.00
+------------+-----------------------------------
+      Total |    253,782      100.00
+
+*/
+restore
+
 sort NRid year VRid 
 save "$dataNR\11_Directors_1994_2018\RL_G7_NR-Bisnode_1994-2017.dta", replace
 
 
 *** Step 5: collapse data to create dataset for analysis
-*use "$dataNR\11_Directors_1994_2018\RL_G7_NR-Bisnode_1994-2017.dta", clear
+use "$dataNR\11_Directors_1994_2018\RL_G7_NR-Bisnode_1994-2017.dta", clear
 
 ** Variable creation and naming
 rename NRid ID
 rename gdename municipality
 rename gdenr_2018_w municipality_num
-rename language_w language
 rename VRid PID
 rename duns CID
 
 ** locals
-local first canton name firstname birthyear sex job elected ///
+local first canton name firstname birthyear sex job elected no_seats ///
 votemargin_rel incumbent tenure list listname_bfs cand_before1931 ///
-municipality municipality_num language ///
+party_left_wing party_center party_right_wing ///
+municipality municipality_num ///
 EDateJoining1 EDateLeaving1 EDateJoining2 EDateLeaving2 EDateJoining3 ///
 EDateLeaving3 EDateJoining4 EDateLeaving4 EDateJoining5 EDateLeaving5 ///
 EDateJoining6 EDateLeaving6
 
-keep `first' ID year PID CID funktion kapitalnominalag // potentially: branch and real-estate company indicator
+keep `first' ID year PID CID funktion kapitalnominalag SIX // potentially: branch and real-estate company indicator
 
 ** collapse
 gen all = 1 if CID != .
@@ -371,13 +393,15 @@ restore
 gen lrg = 1 if CID != . & kapitalnominalag > cap90  & kapitalnominalag < . 
 gen sml = 1 if CID != . & kapitalnominalag <= cap90  & kapitalnominalag < .
 gen prs = 1 if CID != . & funktion == "Präsident/in"
+gen six = 1 if CID != . & SIX == 1
+drop SIX
 
-collapse (first) `first' (sum) all lrg sml prs, by(ID year PID)
+collapse (first) `first' (sum) all lrg sml prs six, by(ID year PID)
 collapse (first) `first' (sum) n_all_sum=all n_lrg_sum=lrg ///
-	n_sml_sum=sml n_prs_sum=prs (mean) n_all_avg=all n_lrg_avg=lrg ///
-	n_sml_avg=sml n_prs_avg=prs, by(ID year)  
+	n_sml_sum=sml n_prs_sum=prs n_six_sum=six (mean) n_all_avg=all ///
+	n_lrg_avg=lrg n_sml_avg=sml n_prs_avg=prs n_six_avg=six, by(ID year)  
 	
-foreach var in all lrg sml prs {
+foreach var in all lrg sml prs six {
 	gen i_`var' = .
 	replace i_`var' = 0 if n_`var'_sum == 0
 	replace i_`var' = 1 if n_`var'_sum > 0 & n_`var'_sum < .
@@ -403,22 +427,26 @@ label var cand_before1931 "Candidate participated in 1925 and/or 1928 election"
 label var tenure "Number of days in office at election date"
 label var incumbent "Incumbent dummy at election date"
 label var elected "Elected"
+label var no_seats "Seats per canton"
 label var votemargin_rel "Running variable (relative vote margin)"
 label var firstname "First name of candidate"
 label var name "Surname of candidate"
 label var list "Party list"
 label var listname_bfs "Party names"
+label var party_left_wing "Left parties"
+label var party_right_wing "Right parties"
+label var party_center "Center parties"
 label var birthyear "Year of birth"
-label var sex "Male=1, Female=0"
+label var sex "Male"
 label var job "Job title"
 label var municipality "Municipality name 2018 (residence)"
 label var municipality_num "Municipality number 2018 (residence)"
-label var language "Majority language in residence municipality"
 label var inoffice "Person is currently in National Council"
 label var i_all "At least one mandate, all companies"
 label var i_lrg "At least one mandate, large companies"
 label var i_sml "At least one mandate, small companies"
 label var i_prs "At least one mandate as president"
+label var i_six "At least one mandate at SIX company"
 label var n_all_sum "Number of mandates, all companies"
 label var n_all_avg "Avg. number of mandates, all companies"
 label var n_lrg_sum "Number of mandates, large companies"
@@ -427,6 +455,8 @@ label var n_lrg_avg "Avg. number of mandates, large companies"
 label var n_sml_avg "Avg. number of mandates, small companies"
 label var n_prs_sum "Number of mandates as president"
 label var n_prs_avg "Avg. number of mandates as president"
+label var n_six_sum "Number of mandates at SIX company"
+label var n_six_avg "Avg. number of mandates at SIX company"
 
 foreach var of varlist i_* n_* {
 	rename `var' `var'_s2

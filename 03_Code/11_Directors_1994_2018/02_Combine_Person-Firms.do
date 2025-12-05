@@ -1,4 +1,4 @@
-version 17
+version 18
 clear all
 set more off
 cap log close
@@ -636,12 +636,18 @@ personenid	anrede	titel	vorname	nachname	nationalität	funktion	duns
 
 drop _merge
 sort personenid duns
-save "$path\02_Processed_data\11_Directors_1994_2018\Bisnode_Person-Firmen_Geo.dta", replace
 
 preserve
 keep personenid duns anrede vorname nachname geburtstag eintrittdatum austrittdatum E_CNTR_w N_CNTR_w rechtsform gremium funktion firma
 save "$path\02_Processed_data\11_Directors_1994_2018\Bisnode_Person-Firmen_Geo_reduced.dta", replace
 restore
+
+** SIX quoted: Add whether or not quoted at SIX stock exchange
+sort duns
+merge m:1 duns using "$path\02_Processed_data\17_SIX\DUNS_related_SIX_1994-2018.dta"
+drop _merge
+
+save "$path\02_Processed_data\11_Directors_1994_2018\Bisnode_Person-Firmen_Geo.dta", replace
 
 
 * Check information overlap: legal statute (Rechtsform) vs. board name (Gremium)

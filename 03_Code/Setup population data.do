@@ -40,7 +40,7 @@ save "$path\02_Processed_data\21_Population\n_directors.dta", replace
 import exc using "$path\01_Raw_data\19_Population\px-x-0102030000_101_20240912-120139.xlsx",  ///
               cellrange(C3:CQ22) firstrow clear
 
-* The full legal age was 20 before 1996. Howwever, in some cases, officials
+* The full legal age was 20 before 1996. However, in some cases, officials
 * could lower it to 18 for specific individuals. Thus, we use 18 throughout (see
 * https://hls-dhs-dss.ch/de/articles/010367/2009-11-26/; accessed September 
 * 9, 2024.)
@@ -242,6 +242,17 @@ replace yrlegperiod = 3 if year == 2006
 replace yrlegperiod = 3 if year == 2010
 replace yrlegperiod = 3 if year == 2014
 
+// election year weights: dealing with missing years within legislative periods (year gaps due to directory data)
+preserve
+gen electyr = year-yrlegperiod
+collapse (first) electyr, by(year)
+bysort electyr: gen count = _N
+drop electyr
+save "$path\02_Processed_data\21_Population\pop_weights.dta", replace
+restore
+
+merge m:1 year using "$path\02_Processed_data\21_Population\pop_weights.dta"
+drop _merge
 
 sort year ID PID
 order ID PID year yrlegperiod ellegperiod
@@ -251,3 +262,4 @@ erase "$path\02_Processed_data\21_Population\dummy_pop.dta"
 erase "$path\02_Processed_data\21_Population\pop_res.dta"
 erase "$path\02_Processed_data\21_Population\n_directors.dta"
 erase "$path\02_Processed_data\21_Population\NR&directors.dta"
+erase "$path\02_Processed_data\21_Population\pop_weights.dta"

@@ -6,11 +6,10 @@ clear
 set more off
 version 17
 
-global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
+*global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
 *global path "C:\Dropbox\Projekt Nationalräte"
 *global path "C:\Current\Dropbox\Projekt Nationalräte"
-*global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
-*global path "C:\Users\Lukas\Dropbox\Projekt Nationalräte"
+global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
 
 ******************************************************
 * (B) READ-IN ELECTION RESULTS DATA (1975 until 2015)
@@ -1768,15 +1767,13 @@ drop merge_status
 erase "$path\02_Processed_data\04_Candidates_status\StatusCheck_AnitaIn.dta"
 erase "$path\02_Processed_data\04_Candidates_status\StatusCheck.dta"
 
-
+/*
 ****************************************************************
 * (J) OUTFILE FÜR BISNODE, ANITA, TODESDATEN, STATUS CHECK 
 ****************************************************************
 	
 * (i) Create file with all variants of name, firstname, birthyear, origin, and
 * municipality
-
-
 
 local vars "name firstname birthyear job partyname"
 * Note: Create a file with all different name/firstname spellings and birthyears
@@ -1959,6 +1956,7 @@ save "$path\02_Processed_data\11_Directors_1994_2018\bisnode_out_long.dta", ///
 *	first(varlabels) replace
 
 restore
+*/
 
 ****************************************************************
 * (K) READ-IN NACHRÜCKER
@@ -2998,7 +2996,7 @@ drop if year==2019
 * Note: one observation from 2019 (from date of election) is dropped 
 drop if ID_pers==. 
 * Note: Drop 53 Vereinzelte and four replacement candidates. 
-drop if votes==.
+*drop if votes==. // Drop later, after we created lagged treatment variable
 * Note: drop 92 candidates that were elected in "stille Wahlen"
 
 
@@ -3157,8 +3155,739 @@ replace eligible_cant_L1= L1.eligible_cant if  year!=`minyear'
 gen no_seats_L1=.
 replace no_seats_L1= L1.no_seats if  year!=`minyear'
 
+
+* (iv) Recode party names for the period 1931-1967
+
+replace partyname="" if year<1971
+rename partyname listname_bfs
+label var listname_bfs "Party list name according to BfS (>=1971)"
+
+gen list_short=list
+
+forvalues i=1(1)30{
+replace list_short = usubinstr(list_short, "Lista `i'. ", "", .)
+replace list_short = usubinstr(list_short, "Liste `i'. ", "", .)
+replace list_short = usubinstr(list_short, "Liste`i'. ", "", .)
+replace list_short = usubinstr(list_short, "Liste `i'.", "", .)
+}
+
+bysort listname_bfs list_short: gen indi=_n
+*br list_short list if indi==1 & listname_bfs!="" // template with all party names
+*br list_short list if indi==1 & listname_bfs=="" // to recode by Kotatis and Büeler
+
+* a) Read in manual check by Kotatis/Büeler (March/April 2025): read in both datasets
+
+preserve
+import excel "$path\01_Raw_data\06_Parties\Party Recoding 1931-1967 Büeler.xlsx", clear first
+rename listname_bfs listname_bfs_bueeler
+rename Quelle Quelle_bueeler
+
+save "$path\01_Raw_data\06_Parties\Party Recoding 1931-1967 Büeler.dta", replace
+
+import excel "$path\01_Raw_data\06_Parties\Party Recoding 1931-1967 Kotatis.xlsx", clear first
+rename listname_bfs listname_bfs_kotatis
+rename Quelle Quelle_kotatis
+merge 1:1 list_short using "$path\01_Raw_data\06_Parties\Party Recoding 1931-1967 Büeler.dta"
+
+* b) look at deviations and prepare for final coding
+order list_short listname_bfs_bueeler listname_bfs_kotatis Quelle_bueeler Quelle_kotatis
+*br if listname_bfs_bueeler!=listname_bfs_kotatis
+
+* c) cases with the same coding: 
+*br if listname_bfs_bueeler==listname_bfs_kotatis
+* Note: the final coding is here: Projekt Nationalräte\01_Raw_data\06_Parties\Final Coding Parties 1931-1967.xlsx
+restore
+
+* d) Recode observations with the same coding
+
+replace listname_bfs="KVP/PCC" if list_short==" Katholische Volkspartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Aktion Kanton Basel"
+replace listname_bfs="EVP/PEV" if list_short=="Aktion für christliche Überzeugung."
+replace listname_bfs="SD/DS" if list_short=="Aktion gegen die Überfremdung"
+replace listname_bfs="Übrige/Autres" if list_short=="Aktionskomitee für den Zinsabbau."
+replace listname_bfs="Übrige/Autres" if list_short=="Aktionskomitee für die Brechung der Zinsknechtschaft."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Bürgerliche Volkspartei"
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Bürgerliste."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Volksliste."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine bürgerliche Volkspartei."
+replace listname_bfs="LdU/AdI" if list_short=="Alliance des Independants"
+replace listname_bfs="LdU/AdI" if list_short=="Alliance des indépendants"
+replace listname_bfs="SVP/UDC" if list_short=="BGB-Mittelstandsliste Zürich-Land"
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauernpartei, Evangelische Volkspartei, Freie Demokratische Vereinigung Baselland, Parteilose."
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauernpartei, Freie Demokraten und Parteilose."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern- und Bürgerpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Arbeiterpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei (BGB-MittelstandsIiste)"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei Baselland"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Kantons Bern."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Mittellandes."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Oberlandes."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernheimatbewegung, Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernheimatbewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauernpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bern. Bauern-, Gewerbe- und Bürgerpartei Emmental-Mittelland-Oberaargau-Seeland."
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental, Jura, Mittelland, Oberaargau, Seeland Freie Demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental-Jura-Mittelland-Oberaargau-Seeland; Freie demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental-Mittelland-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Landesteilverband Oberland Freie Demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Emmental-Jura, Mittelland, Oberaargau, Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Landesteil Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Landesteilverband Oberland; Freie demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei: Freie demokratische Mittelstandspartei Emmental-Jura-Mittelland-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Emmental-Jura-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Landesteil Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Landesteilverband Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Mittelland (Bern-Schwarzenburg-Seftigen)"
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbe-Partei."
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbepartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbepartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Bürgerliche Volksliste."
+replace listname_bfs="CVP/PDC" if list_short=="Christlich-Demokratische Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Christlich-soziale Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei Baselland"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Conservativ-christlichsoziale Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Partei Baselland"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Liste."
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei des Kantons Bern"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei."
+replace listname_bfs="EVP/PEV" if list_short=="Evangelischen Volkspartei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Fortschrittlich-demokratische Partei"
+replace listname_bfs="SVP/UDC" if list_short=="Freie Bauern- und Gewerbepartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmberechtigte"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmberechtigte und Parteilose Wähler"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmbürgerfür die Aufhebung des Stimmzwangs"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freie demokratische Volksliste"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie demokratische und evangelische Wähler"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-Demokratische Partei Baselland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratisch Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Liste"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Basel-Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Baselland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Baselland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Mittelland-Seeland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Oberland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Seeland-Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteile Emmental-Mittelland-Oberaargau-Seeland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Bern-Mittelland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Mittelland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental und Oberaargau"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental, Mittelland, Oberaargan, Seeland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental, Mittelland, Oberaargau, Seeland, Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Seeland - Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteilverband Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung des Kantons Solothurn."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung o"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Paxtei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei Oberaargau/Emmental."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und Jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Landesteilliste des Berner Oberlandes."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Stadt"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Stadt-Zürich"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Zürich-Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Zürich-Stadt"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Freiwirtschaftsbund"
+replace listname_bfs="Übrige/Autres" if list_short=="Freiwirtschaftsbund."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Gruppo Liberale-Radicale."
+replace listname_bfs="Übrige/Autres" if list_short=="Hors-partis vieillesse heureuse - MDES (Mouvement pour la démocratie économique et sociale)"
+replace listname_bfs="Übrige/Autres" if list_short=="Jung Thurgau."
+replace listname_bfs="Übrige/Autres" if list_short=="Jungbauern, Freierwerbende, Arbeiter."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Jungliberale Bewegung"
+replace listname_bfs="KVP/PCC" if list_short=="Katholisch-konservative Volkspartei"
+replace listname_bfs="KVP/PCC" if list_short=="Katholisch-konservative Volkspartei."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei"
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei Basel."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Liste."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Basel."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Baselland."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Schaffhausen."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei des Kantons Bern."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei-Opposition des Kantons Schaffhausen."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volks- und Arbeiterpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volks-Arbeiterpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei und Jungkonservative Bewegung"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei."
+replace listname_bfs="KVP/PCC" if list_short==" Katholische Volkspartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Aktion Kanton Basel"
+replace listname_bfs="EVP/PEV" if list_short=="Aktion für christliche Überzeugung."
+replace listname_bfs="SD/DS" if list_short=="Aktion gegen die Überfremdung"
+replace listname_bfs="Übrige/Autres" if list_short=="Aktionskomitee für den Zinsabbau."
+replace listname_bfs="Übrige/Autres" if list_short=="Aktionskomitee für die Brechung der Zinsknechtschaft."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Bürgerliche Volkspartei"
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Bürgerliste."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine Volksliste."
+replace listname_bfs="Übrige/Autres" if list_short=="Allgemeine bürgerliche Volkspartei."
+replace listname_bfs="LdU/AdI" if list_short=="Alliance des Independants"
+replace listname_bfs="LdU/AdI" if list_short=="Alliance des indépendants"
+replace listname_bfs="SVP/UDC" if list_short=="BGB-Mittelstandsliste Zürich-Land"
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauernpartei, Evangelische Volkspartei, Freie Demokratische Vereinigung Baselland, Parteilose."
+replace listname_bfs="SVP/UDC" if list_short=="Baselbieter Bauernpartei, Freie Demokraten und Parteilose."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern- und Bürgerpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Arbeiterpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei (BGB-MittelstandsIiste)"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei Baselland"
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Kantons Bern."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Mittellandes."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei des Oberlandes."
+replace listname_bfs="SVP/UDC" if list_short=="Bauern-, Gewerbe- und Bürgerpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernheimatbewegung, Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernheimatbewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bauernpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Bern. Bauern-, Gewerbe- und Bürgerpartei Emmental-Mittelland-Oberaargau-Seeland."
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental, Jura, Mittelland, Oberaargau, Seeland Freie Demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental-Jura-Mittelland-Oberaargau-Seeland; Freie demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Emmental-Mittelland-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei Landesteilverband Oberland Freie Demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Emmental-Jura, Mittelland, Oberaargau, Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Landesteil Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei, Landesteilverband Oberland; Freie demokratische Mittelstandspartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei: Freie demokratische Mittelstandspartei Emmental-Jura-Mittelland-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Emmental-Jura-Oberaargau-Seeland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Landesteil Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Landesteilverband Oberland"
+replace listname_bfs="SVP/UDC" if list_short=="Bernische Bauern-, Gewerbe- und Bürgerpartei; Freie demokratische Mittelstandspartei, Mittelland (Bern-Schwarzenburg-Seftigen)"
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbe-Partei."
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbepartei"
+replace listname_bfs="SVP/UDC" if list_short=="Bürger- und Gewerbepartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Bürgerliche Volksliste."
+replace listname_bfs="CVP/PDC" if list_short=="Christlich-Demokratische Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Christlich-soziale Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei Baselland"
+replace listname_bfs="CVP/PDC" if list_short=="Christlichsoziale Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Conservativ-christlichsoziale Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Partei Baselland"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Liste."
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei des Kantons Bern"
+replace listname_bfs="EVP/PEV" if list_short=="Evangelische Volkspartei."
+replace listname_bfs="EVP/PEV" if list_short=="Evangelischen Volkspartei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Fortschrittlich-demokratische Partei"
+replace listname_bfs="SVP/UDC" if list_short=="Freie Bauern- und Gewerbepartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmberechtigte"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmberechtigte und Parteilose Wähler"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie Stimmbürgerfür die Aufhebung des Stimmzwangs"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freie demokratische Volksliste"
+replace listname_bfs="Übrige/Autres" if list_short=="Freie demokratische und evangelische Wähler"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-Demokratische Partei Baselland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratisch Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Liste"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Basel-Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Baselland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Baselland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei Mittelland-Seeland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Oberland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteil Seeland-Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern Landesteile Emmental-Mittelland-Oberaargau-Seeland."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Bern-Mittelland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Mittelland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteil Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental und Oberaargau"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental, Mittelland, Oberaargan, Seeland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Emmental, Mittelland, Oberaargau, Seeland, Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteile Seeland - Laufental"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern, Landesteilverband Oberland"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei des Kantons Bern."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung des Kantons Solothurn."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung o"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und Jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei und jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Partei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Paxtei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei Oberaargau/Emmental."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und Jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei und jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnig-demokratische Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Landesteilliste des Berner Oberlandes."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Stadt"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Stadt-Zürich"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Zürich-Land"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste Zürich-Stadt"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Liste."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Freisinnige Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Freiwirtschaftsbund"
+replace listname_bfs="Übrige/Autres" if list_short=="Freiwirtschaftsbund."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Gruppo Liberale-Radicale."
+replace listname_bfs="Übrige/Autres" if list_short=="Hors-partis vieillesse heureuse - MDES (Mouvement pour la démocratie économique et sociale)"
+replace listname_bfs="Übrige/Autres" if list_short=="Jung Thurgau."
+replace listname_bfs="Übrige/Autres" if list_short=="Jungbauern, Freierwerbende, Arbeiter."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Jungliberale Bewegung"
+replace listname_bfs="KVP/PCC" if list_short=="Katholisch-konservative Volkspartei"
+replace listname_bfs="KVP/PCC" if list_short=="Katholisch-konservative Volkspartei."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei"
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei Basel."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Liste."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Basel."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Baselland."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei Schaffhausen."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei des Kantons Bern."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei-Opposition des Kantons Schaffhausen."
+replace listname_bfs="PdA/PST" if list_short=="Kommunistische Partei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volks- und Arbeiterpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volks-Arbeiterpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei Oberwallis"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei und Jungkonservative Bewegung"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative Volkspartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und Christlichsoziale Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlich-soziale Partei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlich-soziale Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlich-soziale Volkspartei des Kantons Luzern."
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlichsoziale Volkspartei"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlichsoziale Volkspartei des Kantons Luzern"
+replace listname_bfs="CVP/PDC" if list_short=="Konservative und christlichsoziale Volkspartei."
+replace listname_bfs="LdU/AdI" if list_short=="Landesring der Unabhangigen"
+replace listname_bfs="LdU/AdI" if list_short=="Landesring der Unabhängigen"
+replace listname_bfs="LdU/AdI" if list_short=="Landesring der Unabhängigen Alliance des indépendants"
+replace listname_bfs="LdU/AdI" if list_short=="Landesring der Unabhängigen."
+replace listname_bfs="SVP/UDC" if list_short=="Landesteilverband Oberland der bern. Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Landesteilverband Oberland der bern. Bauern-, Gewerbe- und Bürgerpartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Partei Basel."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Partei des Kantons Luzern."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Partei und Bürger- und Gewerbepartei Basel."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Partei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Radicale."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Volkspartei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Volkspartei und Jungliberale Bewegung"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Volkspartei und jungliberale Bewegung."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale radicale"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale und jungliberale Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberale-radicale"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liberate Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Libérale-démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Libérale."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Lista 3.Partito Liberale-Radicale."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Lista 4.Gruppo Liberale-Radicale-Democratico."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Lista del gruppo liberale radicale."
+replace listname_bfs="SP/PS" if list_short=="Lista del partito socialista ticinese"
+replace listname_bfs="SP/PS" if list_short=="Lista del partito socialiste."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Lista liberale radicale"
+replace listname_bfs="EVP/PEV" if list_short=="Liste Evangelische Volkspartei"
+replace listname_bfs="SD/DS" if list_short=="Liste Nationaler Demokraten."
+replace listname_bfs="CSP/PCS" if list_short=="Liste chrétienne sociale vaudoise"
+replace listname_bfs="Übrige/Autres" if list_short=="Liste d'entente nationale paysanne et classes moyennes."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste d'union paysanne et ouvrière"
+replace listname_bfs="PdA/PST" if list_short=="Liste da parti ouvrier et populaire vaudois"
+replace listname_bfs="LdU/AdI" if list_short=="Liste de l'alliance des indépendants."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Bauern-, Gewerbe- und Bürgerpartei"
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Bauern-, Gewerbe- und Bürgerpartei Zürich-Stadt (Mittelstandsliste)"
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Bauern-, Gewerbe-und Bürgerpartei (Mittelstandsliste)"
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Bauernpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Bauernpartei. Bäuerlich-gewerblich-bürgerliche Liste."
+replace listname_bfs="EVP/PEV" if list_short=="Liste der Evangelischen Volkspartei"
+replace listname_bfs="EVP/PEV" if list_short=="Liste der Evangelischen Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste der Freisinnig-demokratischen Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste der Freiwirtschaftlichen Aktion."
+replace listname_bfs="KVP/PCC" if list_short=="Liste der Katholisch-konservativen Volkspartei des Oberwallis"
+replace listname_bfs="KVP/PCC" if list_short=="Liste der Katholischen Volkspartei"
+replace listname_bfs="KVP/PCC" if list_short=="Liste der Katholischen Volkspartei."
+replace listname_bfs="PdA/PST" if list_short=="Liste der Kommunistischen Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste der Nationalen Front."
+replace listname_bfs="PdA/PST" if list_short=="Liste der Partei der Arbeit"
+replace listname_bfs="PdA/PST" if list_short=="Liste der Partei der Arbeit."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste der Schweiz. Bauern-Heimatbewegung."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste der Schweizerischen Volksbewegung gegen die Überfremdung"
+replace listname_bfs="SP/PS" if list_short=="Liste der Sozialdemokraten, Gewerkschafter und Angestellten"
+replace listname_bfs="SP/PS" if list_short=="Liste der Sozialdemokratischen Partei."
+replace listname_bfs="SAP/PSO" if list_short=="Liste der Sozialistischen Arbeiterpartei."
+replace listname_bfs="LdU/AdI" if list_short=="Liste der Unabhängigen (Landesring)."
+replace listname_bfs="EVP/PEV" if list_short=="Liste der evangelischen Volkspartei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste der freisinnig-demokratischen Partei und der Jungliberalen Bewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der kantonalen Bauernpartei. Bäuerlich-gewerblichbürgerliche Liste."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der kantonalen zürcherischen Bauernpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Liste der konservativen Volkspartei."
+replace listname_bfs="CVP/PDC" if list_short=="Liste der konservativen und christlichsozialen Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste der liberalen Partei"
+replace listname_bfs="SP/PS" if list_short=="Liste der sozialdemokratischen Partei"
+replace listname_bfs="SP/PS" if list_short=="Liste der sozialdemokratischen Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste des neuen Gotthardrings"
+replace listname_bfs="SVP/UDC" if list_short=="Liste des paysans, artisans et bourgeois."
+replace listname_bfs="SVP/UDC" if list_short=="Liste des paysans, artisans et indépendants"
+replace listname_bfs="Übrige/Autres" if list_short=="Liste du mouvement jeune-conservateur."
+replace listname_bfs="SVP/UDC" if list_short=="Liste du parti des paysans et des indépendants"
+replace listname_bfs="PdA/PST" if list_short=="Liste du parti ouvrier et populaire"
+replace listname_bfs="PdA/PST" if list_short=="Liste du parti ouvrier et populaire."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste du parti paysan et des classes moyennes"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste du parti radical-démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste du parti radical."
+replace listname_bfs="SP/PS" if list_short=="Liste du parti socialiste vaudois"
+replace listname_bfs="SP/PS" if list_short=="Liste du parti socialiste vaudois."
+replace listname_bfs="SP/PS" if list_short=="Liste du parti socialiste."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste für Sauberkeit in der Politik"
+replace listname_bfs="Übrige/Autres" if list_short=="Liste für freie Meinungsäusserung im Parlament"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste libérale et jeune-radicale jurassienne."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste libérale-radicale démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste libérale-radicale indépendante."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste libérale-radicale-démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste libérale-radicale."
+replace listname_bfs="SVP/UDC" if list_short=="Liste nationale paysanne (liste du parti national des paysans, artisans et bourgeois)."
+replace listname_bfs="SVP/UDC" if list_short=="Liste nationale paysanne et indépendante démocratique vaudoise"
+replace listname_bfs="Übrige/Autres" if list_short=="Liste ouvrière et paysanne."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste radicale"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste radicale démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste radicale-démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste radicale-démocratique."
+replace listname_bfs="SP/PS" if list_short=="Liste socialiste"
+replace listname_bfs="SP/PS" if list_short=="Liste socialiste vaudoise."
+replace listname_bfs="SP/PS" if list_short=="Liste socialiste."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste travailliste."
+replace listname_bfs="Übrige/Autres" if ustrregexm(list_short,"Eidgenössische Front")
+replace listname_bfs="Übrige/Autres" if ustrregexm(list_short," Nationale Front")
+replace listname_bfs="Übrige/Autres" if ustrregexm(list_short,"Front")
+replace listname_bfs="Übrige/Autres" if list_short=="Liste. 13. Liste der Überparteilichen Union"
+replace listname_bfs="Übrige/Autres" if list_short=="Mouvement social des paysans, ouvriers et indépendants"
+replace listname_bfs="Übrige/Autres" if list_short=="Mouvement social-paysan indépendant"
+replace listname_bfs="SD/DS" if list_short=="Nationale Aktion gegen die Überfremdung von Volk und Heimat"
+replace listname_bfs="Übrige/Autres" if list_short=="Nationale Erneuerung."
+replace listname_bfs="Übrige/Autres" if list_short=="Nationale Front."
+replace listname_bfs="Übrige/Autres" if list_short=="Nouvel ordre politique national."
+replace listname_bfs="Übrige/Autres" if list_short=="Ordre politique national."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Part radical."
+replace listname_bfs="PdA/PST" if list_short=="Partei der Arbeit"
+replace listname_bfs="PdA/PST" if list_short=="Partei der Arbeit des Kantons Bern."
+replace listname_bfs="PdA/PST" if list_short=="Partei der Arbeit."
+replace listname_bfs="CVP/PDC" if list_short=="Partei der Christlichsozialen."
+replace listname_bfs="Übrige/Autres" if list_short=="Parteilose"
+replace listname_bfs="CSP/PCS" if list_short=="Parti Chrétien social vaudois"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti Radical Démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti Radical-démocratique"
+replace listname_bfs="SP/PS" if list_short=="Parti Socialiste"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti Unitaire Romand"
+replace listname_bfs="CSP/PCS" if list_short=="Parti chrétien social"
+replace listname_bfs="CSP/PCS" if list_short=="Parti chrétien social vaudois"
+replace listname_bfs="CSP/PCS" if list_short=="Parti chrétien-social du Jura"
+replace listname_bfs="CSP/PCS" if list_short=="Parti chrétien-social vaudois"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti communiste de Suisse."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti communiste vaudois."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti communiste."
+replace listname_bfs="CVP/PDC" if list_short=="Parti conservateur chrétien social du Valais romand"
+replace listname_bfs="CVP/PDC" if list_short=="Parti conservateur chrétien-social du Valais romand"
+replace listname_bfs="CVP/PDC" if list_short=="Parti conservateur chrétien-social et Parti indépendant chrétien-social"
+replace listname_bfs="SVP/UDC" if list_short=="Parti des paysans, artisans et bourgeois du Jura."
+replace listname_bfs="SVP/UDC" if list_short=="Parti des paysans, artisans et indépendants"
+replace listname_bfs="PdA/PST" if list_short=="Parti du travail"
+replace listname_bfs="PdA/PST" if list_short=="Parti du travail."
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocratique chrétien-social jurassien"
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocratique-catholique du canton de Berne."
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocratique-chrétien-social jurassien"
+replace listname_bfs="SVP/UDC" if list_short=="Parti fribourgeois des paysans, artisans et des indépendants"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti indépendant progressiste."
+replace listname_bfs="LPS/PLS" if list_short=="Parti liberal"
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral"
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral démocratique"
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral jurassien"
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral jurassien."
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral-démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti libéral-radical indépendant"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti libéral-radical jurassien (Freisinnige Partei des Jura), Parti national romand de Bienne"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti libéral-radical jurassien Freisinnige Partei des Jura"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti libéral-radical jurassien Parti national romand de Bienne Groupe radical romand de Berne"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti libéral-radical."
+replace listname_bfs="LPS/PLS" if list_short=="Parti libéral."
+replace listname_bfs="LPS/PLS" if list_short=="Parti libérale-démocratique"
+replace listname_bfs="SVP/UDC" if list_short=="Parti national des paysans, vignerons, artisans et bourgeois."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti national paysan."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti ouvrier et paysan."
+replace listname_bfs="PdA/PST" if list_short=="Parti ouvrier et populaire"
+replace listname_bfs="PdA/PST" if list_short=="Parti ouvrier et populaire neuchâtelois"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radical"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radical démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radical-démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radical-démocratique."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radical."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Parti radicale-démocratique"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti républicain pour les Etats-Unis d'Europe."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste"
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste de Genève."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste genevois"
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste genevois."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste jurassie"
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste jurassien"
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste jurassien."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste neuchâtelois."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste valaisan."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste vaudois"
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste vaudois."
+replace listname_bfs="SP/PS" if list_short=="Parti socialiste."
+replace listname_bfs="SVP/UDC" if list_short=="Parti vaudois des paysans, artisans et indépendants"
+replace listname_bfs="SVP/UDC" if list_short=="Parti vaudois des paysans, artisans et indépendants (PAI)"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Partito Liberale radicale"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Partito Liberale-Radicale-Democratico."
+replace listname_bfs="SP/PS" if list_short=="Partito Socialista"
+replace listname_bfs="SP/PS" if list_short=="Partito Socialista Svizzero (Ticino)."
+replace listname_bfs="SP/PS" if list_short=="Partito Socialista."
+replace listname_bfs="Übrige/Autres" if list_short=="Partito agrario e ceto medio"
+replace listname_bfs="PdA/PST" if list_short=="Partito comunista."
+replace listname_bfs="PdA/PST" if list_short=="Partito del lavoro"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radicale-démocratique"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radicale."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radikal-demokratische Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radikal-demokratische Partei."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radikaldemokratische Partei Basel."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Radikaldemokratische Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Schweizer Freiwirtschaftsbund."
+replace listname_bfs="SP/PS" if list_short=="Socialiste"
+replace listname_bfs="SP/PS" if list_short=="Socialiste Populaire"
+replace listname_bfs="SP/PS" if list_short=="Socialiste."
+replace listname_bfs="SVP/UDC" if list_short=="Solothurnische Bauern-, Gewerbe- und Bürgerpartei."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokraten"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratisch-Gewerkschaftliche Liste."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratisch-gewerkschaftliche Liste."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Liste."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei (Arbeiterunion)."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei Basel-Land"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei Basel."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei Baselland"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei Baselland."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei des Kantons Bern"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei des Kantons Bern Parti socialiste du canton de Berne"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei des Kantons Bern."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei des Kantons Luzern."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei des Kantons Solothurn."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei und Gewerkschaften"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei und Gewerkschaftskartell"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei."
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische Partei. "
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische und Gewerkschaftliche Liste"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische und gewerkschaftliche Partei"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische-Gewerkschaftliche Liste"
+replace listname_bfs="SP/PS" if list_short=="Sozialdemokratische-gewerkschaftlicheListe"
+replace listname_bfs="SP/PS" if list_short=="SozialdemokratischeListe."
+replace listname_bfs="Übrige/Autres" if list_short=="Team 67. Liberale Aargauer für eine moderne Schweiz"
+replace listname_bfs="Übrige/Autres" if list_short=="Union de défense économique et d'action nationale."
+replace listname_bfs="Übrige/Autres" if list_short=="Union fédérale indépendante"
+replace listname_bfs="Übrige/Autres" if list_short=="Union nationale."
+replace listname_bfs="Übrige/Autres" if list_short=="VEREINZELTE"
+replace listname_bfs="Übrige/Autres" if list_short=="Vereinigte Bürgerparteien"
+replace listname_bfs="Übrige/Autres" if list_short=="Vereinigte Liberalsozialistische Partei-Fortschrittliche Bürger"
+replace listname_bfs="SVP/UDC" if list_short=="Vereinigte Liste der Bauern, Bürger und Gewerbetreibenden."
+replace listname_bfs="Übrige/Autres" if list_short=="Vigilance"
+replace listname_bfs="Übrige/Autres" if list_short=="Wiedervereinigungsfreundliche Liste Aktion Kanton Basel"
+replace listname_bfs="Übrige/Autres" if list_short=="WiedervereinigungsfreundlicheListe, Aktion Kanton Basel"
+replace listname_bfs="Übrige/Autres" if list_short=="Wiedervereinigungsliste-Aktion Kanton Basel"
+
+
+* e) Recode observations with different coding Kotatis and Büeler (check by Lukas April 2025) 
+replace listname_bfs="PdA/PST" if list_short=="Arbeiter- and Angestelltenunion"
+replace listname_bfs="PdA/PST" if list_short=="Arbeiterpartei."
+replace listname_bfs="PdA/PST" if list_short=="Arbeiterunion"
+replace listname_bfs="PdA/PST" if list_short=="Arbeiterunion."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernliste"
+replace listname_bfs="SVP/UDC" if list_short=="Bauernliste."
+replace listname_bfs="SVP/UDC" if list_short=="Bauernvereinigung"
+replace listname_bfs="SVP/UDC" if list_short=="Bauernvereinigung."
+replace listname_bfs="Übrige/Autres" if list_short=="Bund Freier Demokraten."
+replace listname_bfs="Übrige/Autres" if list_short=="Bund freier Demokraten."
+replace listname_bfs="SVP/UDC" if list_short=="Bäuerlich-gewerblich-bürgerliche Liste."
+replace listname_bfs="CSP/PCS" if list_short=="Christlichsoziale Liste"
+replace listname_bfs="CSP/PCS" if list_short=="Christlichsoziale Liste."
+replace listname_bfs="CSP/PCS" if list_short=="Christlichsoziale Partei"
+replace listname_bfs="CSP/PCS" if list_short=="Christlichsoziale Partei."
+replace listname_bfs="KVP/PCC" if list_short=="Conservatore-democratico"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Liste"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Liste."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Partei"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Demokratische Partei."
+replace listname_bfs="Übrige/Autres" if list_short=="Demokratische Volkspartei."
+replace listname_bfs="PdA/PST" if list_short=="Demokratische und Arbeiterpartei"
+replace listname_bfs="PdA/PST" if list_short=="Demokratische und Arbeiterpartei."
+replace listname_bfs="PdA/PST" if list_short=="Défense de l'agriculture et du travail."
+replace listname_bfs="Übrige/Autres" if list_short=="Freiwirtschaftliche Liste."
+replace listname_bfs="Übrige/Autres" if list_short=="Fédération libérale populaire jurassienne."
+replace listname_bfs="Übrige/Autres" if list_short=="Fédération régionale jurassienne du parti des paysans, artisans et bourgeois."
+replace listname_bfs="CVP/PDC" if list_short=="Gruppo Conservatore-Democratico."
+replace listname_bfs="CVP/PDC" if list_short=="Gruppo conservatore-democratico."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei und Christlich-soziale Vereinigung Baselland."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei und Christlichsoziale Vereinigung"
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei und Christlichsoziale Vereinigung Baselland."
+replace listname_bfs="KVP/PCC" if list_short=="Katholische Volkspartei und Christlichsoziale Vereinigung."
+replace listname_bfs="CSP/PCS" if list_short=="Katholische und Christlichsoziale Volkspartei"
+replace listname_bfs="CSP/PCS" if list_short=="Katholische und christlichsoziale Volkspartei"
+replace listname_bfs="CSP/PCS" if list_short=="Konservativ-Christlichsoziale Volkspartei"
+replace listname_bfs="CSP/PCS" if list_short=="Konservativ-Christlichsoziale Volkspartei des Kantons Bern"
+replace listname_bfs="CSP/PCS" if list_short=="Konservativ-christlichsoziale Partei"
+replace listname_bfs="CSP/PCS" if list_short=="Konservativ-christlichsoziale Volkspartei"
+replace listname_bfs="CSP/PCS" if list_short=="Konservativ-christlichsoziale Volkspartei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservativ-demokratische Partei."
+replace listname_bfs="CVP/PDC" if list_short=="Konservativ-demokratischePartei."
+replace listname_bfs="LSP" if list_short=="Liberal-demokratische Bürgerpartei"
+replace listname_bfs="LSP" if list_short=="Liberal-sozialistische Partei des Kantons Bern"
+replace listname_bfs="CVP/PDC" if list_short=="Lista 2.Conservatore-democratico"
+replace listname_bfs="CVP/PDC" if list_short=="Lista 2.Gruppo Conservatore-Democratico."
+replace listname_bfs="SVP/UDC" if list_short=="Lista del gruppo agrario popolare ticinese."
+replace listname_bfs="CVP/PDC" if list_short=="Lista del gruppo conservatore democratico"
+replace listname_bfs="CVP/PDC" if list_short=="Lista del gruppo conservatore democratico."
+replace listname_bfs="PdA/PST" if list_short=="Lista del partito operaio e contadino ticinese."
+replace listname_bfs="LdU/AdI" if list_short=="Liste Landesring der Unabhängigen"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice populaire pour les districts de la Gruyère, de la Glane et de la Veveyse"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice populaire pour les districts de la Sarine et de la Broyé"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice populaire pour les districts de la Singine et du Lac"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice-chrétienne-sociale"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice-progressiste"
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice-progressiste."
+replace listname_bfs="CVP/PDC" if list_short=="Liste conservatrice."
+replace listname_bfs="SD/DS" if list_short=="Liste de l'action helvétique."
+replace listname_bfs="CSP/PCS" if list_short=="Liste der Christlich-Sozialen Partei."
+replace listname_bfs="CSP/PCS" if list_short=="Liste der Christlichsozialen"
+replace listname_bfs="CSP/PCS" if list_short=="Liste der Christlichsozialen Volkspartei Oberwallis"
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste der Demokratischen Partei des Kantons Zürich."
+replace listname_bfs="FDP/PLR (PRD)" if list_short=="Liste der Demokratischen Partei, für eine gesunde Bevölkerungspolitik"
+replace listname_bfs="Übrige/Autres" if list_short=="Liste der Fortschrittlichen Bürgerpartei."
+replace listname_bfs="CVP/PDC" if list_short=="Liste der Konservativen Volkspartei"
+replace listname_bfs="LSP" if list_short=="Liste der Liberalsozialisten"
+replace listname_bfs="LSP" if list_short=="Liste der Liberalsozialistischen Partei (Freiwirtschafter)."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Schweizerischen Bauernheimatbewegung (Jungbauern)."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Schweizerischen Bauernheimatbewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Liste der Schweizervolk-Partei"
+replace listname_bfs="CVP/PDC" if list_short=="Liste du parti conservateur"
+replace listname_bfs="CVP/PDC" if list_short=="Liste du parti conservateur."
+replace listname_bfs="LPS/PLS" if list_short=="Liste du parti libéral-démocratique."
+replace listname_bfs="LPS/PLS" if list_short=="Liste du parti libéral."
+replace listname_bfs="SVP/UDC" if list_short=="Liste du parti paysan."
+replace listname_bfs="LPS/PLS" if list_short=="Liste libérale"
+replace listname_bfs="LPS/PLS" if list_short=="Liste libérale démocratique"
+replace listname_bfs="LPS/PLS" if list_short=="Liste libérale-démocratique"
+replace listname_bfs="LPS/PLS" if list_short=="Liste libérale-démocratique."
+replace listname_bfs="Übrige/Autres" if list_short=="Liste populaire valaisanne."
+replace listname_bfs="Übrige/Autres" if list_short=="Mouvement social indépendent"
+replace listname_bfs="Übrige/Autres" if list_short=="Nationale Volkspartei Basel."
+replace listname_bfs="Übrige/Autres" if list_short=="Nationale Volkspartei."
+replace listname_bfs="Übrige/Autres" if list_short=="Parteilose Liste der Evangelisch-Christlichen Bürger"
+replace listname_bfs="Übrige/Autres" if list_short=="Parteilose Liste der Evangelisch-christlichen Bürger"
+replace listname_bfs="Übrige/Autres" if list_short=="Parteilose Liste der evangelisch-christlichen Bürger"
+replace listname_bfs="CVP/PDC" if list_short=="Parti Conservateur chrétien-social du Valais Romand"
+replace listname_bfs="CVP/PDC" if list_short=="Parti conservateur valaisan."
+replace listname_bfs="CVP/PDC" if list_short=="Parti conservateur."
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocrate populaire neuchâtelois."
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocratique catholique"
+replace listname_bfs="CVP/PDC" if list_short=="Parti démocratique-catholique."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti démocratique."
+replace listname_bfs="CSP/PCS" if list_short=="Parti indépendant chrétien-social"
+replace listname_bfs="CSP/PCS" if list_short=="Parti indépendant chrétien-social."
+replace listname_bfs="CSP/PCS" if list_short=="Parti indépendant et chrétien social genevois."
+replace listname_bfs="CSP/PCS" if list_short=="Parti indépendant et chrétien social."
+replace listname_bfs="CSP/PCS" if list_short=="Parti indépendant-chrétien-social."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti national démocratique"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti national démocratique."
+replace listname_bfs="CVP/PDC" if list_short=="Parti populaire catholique du Haut-Valais."
+replace listname_bfs="CVP/PDC" if list_short=="Parti populaire catholique."
+replace listname_bfs="Übrige/Autres" if list_short=="Parti progressiste"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti progressiste national"
+replace listname_bfs="Übrige/Autres" if list_short=="Parti progressiste national."
+replace listname_bfs="Übrige/Autres" if list_short=="Partito Agrari, Artigiani et Patrizi"
+replace listname_bfs="CVP/PDC" if list_short=="Partito Conservatore-democratico"
+replace listname_bfs="CVP/PDC" if list_short=="Partito conservatore democratico"
+replace listname_bfs="SAP/PSO" if list_short=="Partito socialista"
+replace listname_bfs="SAP/PSO" if list_short=="Partito socialista Svizzero-Ticino."
+replace listname_bfs="Übrige/Autres" if list_short=="Paysans, artisans et bourgeois du Jura."
+replace listname_bfs="Übrige/Autres" if list_short=="Progressiste-nationale."
+replace listname_bfs="SVP/UDC" if list_short=="Schaffhauser Bauernpartei."
+replace listname_bfs="SVP/UDC" if list_short=="Schweiz. Bauernheimatbewegung im Thurgau."
+replace listname_bfs="SVP/UDC" if list_short=="Schweiz. Bauernheimatbewegung, Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Schweiz. Bauernheimatbewegung. Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Schweiz. Bauernheimatbewegung.Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Schweizerische Bauern-Heimatbewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Schweizerische Bauernheimatbewegung (Jungbauern)."
+replace listname_bfs="SVP/UDC" if list_short=="Schweizerische Bauernheimatbewegung, Jungbauern."
+replace listname_bfs="SVP/UDC" if list_short=="Schweizerische Bauernheimatbewegung."
+replace listname_bfs="SVP/UDC" if list_short=="Schweizervolk-Partei"
+replace listname_bfs="CSP/PCS" if list_short=="Solothurnische Volkspartei und Christlichsoziale"
+replace listname_bfs="Übrige/Autres" if list_short=="Solothurnische Volkspartei."
+replace listname_bfs="CSP/PCS" if list_short=="Solothurniscne Volkspartei und Christlichsoziale"
+replace listname_bfs="SAP/PSO" if list_short=="Sozialistische Arbeiterpartei."
+replace listname_bfs="SAP/PSO" if list_short=="SozialistischeArbeiterpartei"
+replace listname_bfs="Übrige/Autres" if list_short=="Unabhängig-Freie Liste."
+replace listname_bfs="LdU/AdI" if list_short=="Unabhängig-Landesring."
+replace listname_bfs="Übrige/Autres" if list_short=="Unabhängige Liste."
+replace listname_bfs="Übrige/Autres" if list_short=="Vereinigung evangelischer Wähler"
+replace listname_bfs="Übrige/Autres" if list_short=="Überparteiliche Liste Christlicher Bürger"
+
+gen pol_orientation=""
+replace pol_orientation="center" if listname_bfs=="FDP/PRD"
+replace pol_orientation="center" if listname_bfs=="FDP/PLR (PRD)"
+replace pol_orientation="center" if listname_bfs=="CVP/PDC"
+replace pol_orientation="center" if listname_bfs=="BDP/PBD"
+replace pol_orientation="left" if listname_bfs=="SP/PS"
+replace pol_orientation="left" if listname_bfs=="Sol."
+replace pol_orientation="left" if listname_bfs=="F"
+replace pol_orientation="left" if listname_bfs=="LS"
+replace pol_orientation="left" if listname_bfs=="LSP"
+replace pol_orientation="right" if listname_bfs=="SVP/UDC"
+replace pol_orientation="right" if listname_bfs=="MCR"
+replace pol_orientation="center" if listname_bfs=="LPS/PLS"
+replace pol_orientation="center" if listname_bfs=="LdU/AdI"
+replace pol_orientation="center" if listname_bfs=="EVP/PEV"
+replace pol_orientation="center" if listname_bfs=="CSP/PCS"
+replace pol_orientation="left" if listname_bfs=="PdA/PST"
+replace pol_orientation="left" if listname_bfs=="PSA"
+replace pol_orientation="left" if listname_bfs=="POCH"
+replace pol_orientation="left" if listname_bfs=="GA/ASV"
+replace pol_orientation="left" if listname_bfs=="GPS/PES"
+replace pol_orientation="right" if listname_bfs=="Rep./Rép."
+replace pol_orientation="right" if listname_bfs=="SD/DS"
+replace pol_orientation="right" if listname_bfs=="EDU/UDF"
+replace pol_orientation="right" if listname_bfs=="FPS/PSL"
+replace pol_orientation="right" if listname_bfs=="Lega"
+replace pol_orientation="left" if listname_bfs=="DSP/PSD"
+replace pol_orientation="left" if listname_bfs=="F-GA/VA-F"
+replace pol_orientation="other" if listname_bfs=="Sep./Sép."
+replace pol_orientation="left" if listname_bfs=="Sol./Sol."
+replace pol_orientation="left" if listname_bfs=="SAP/PSO"
+replace pol_orientation="right" if listname_bfs=="KVP/PCC"
+replace pol_orientation="center" if listname_bfs=="GLP/PVL"
+replace pol_orientation="other" if listname_bfs=="Übrige/Autres"
+
+gen party_left_wing=0 
+replace party_left_wing=1 if pol_orientation=="left"
+
+gen party_center=0 
+replace party_center=1 if pol_orientation=="center"
+
+gen party_right_wing=0 
+replace party_right_wing=1 if pol_orientation=="right"
+
 	
-* (iv) Labeling and save dataset
+* (v) Labeling and save dataset
 
 label var ID "Candidate ID"
 label var cand_before1931 "Candidate participated in 1925 and/or 1928 election"
@@ -3207,8 +3936,6 @@ label var EDateLeaving5 "Date of Leaving National Council, Fifth Spell"
 label var EDateJoining6 "Date of Joining National Council, Sixth Spell"
 label var EDateLeaving6 "Date of Leaving National Council, Sixth Spell"
 
-
-
 * (v) Final corrections
 
 list name firstname year if elected==1 & votemargin<0
@@ -3217,11 +3944,29 @@ list name firstname year if elected==1 & votemargin<0
 replace elected=0 if year==1939 & name=="Musy" & firstname=="Jean-Marie" // Initially wrong results delivered by the cantonal government of FR, later corrected (see file "Spezialfälle.pdf")
 replace elected=1 if year==1939 & name=="Colliard" & firstname=="Robert"
 
+
+* Six ID changes after Quirin Oettl's ID construction for 1931-2023 (May 2025) but 
+* we do not consider them in our paper "Do firms hire politicians as..." because
+* we did the record linkage on the ol
+
+/*
+replace ID="BEJU-1995-0558" if firstname=="Therese" & name=="Friedli-Wyss" & birthyear==1975 & year==1999 & canton=="BE"
+replace ID="BEJU-2007-0235" if firstname=="Tabea" & name=="Bossard-Jenni" & birthyear==1988 & year==2015 & canton=="BE"
+replace ID="ZH-1987-0114" if firstname=="Eva" & name=="Virag Jansen" & birthyear==1959 & year==2015 & canton=="ZH"
+replace ID="ZH-1991-0264" if ID=="ZH-1995-0343"
+replace ID="ZH-1995-0305" if firstname=="Franziska" & name=="Kappeler-Hirt" & birthyear==1970 & year==1999 & canton=="ZH"
+replace ID="ZH-1991-0082" if firstname=="Sonja" & name=="Werner-Breu" & birthyear==1967 & year==1995 & canton=="ZH"
+*/
+
+drop ID_pers
+egen ID_pers=group(ID)
+xtset ID_pers ID_time
+
 * Note: as a consequence, we also need to re-create the elected_F1 variables
 *       (April 5, 2023)
 
-drop elected_F1 elected_L1
 
+drop elected_F1 elected_L1
 local vars "elected" 
 foreach var in `vars'{			
 gen `var'_F1=F1.`var'
@@ -3230,10 +3975,18 @@ replace `var'_F1=0 if `var'_F1==. & year!=`maxyear'
 replace `var'_L1=0 if `var'_L1==. & year!=`minyear'
 }
 
+preserve 
+keep if votes==. 
+keep ID year
+replace year=year+4
+save "$path\02_Processed_data\01_Elections_1931_1975\tacit_elections.dta", replace
+restore
 
-replace partyname="" if year<1971
-rename partyname listname_bfs
-label var listname_bfs "Party list name according to BfS (>=1971)"
+* Note: read out candidates elected in tacit elections to recode elected_L4 for 
+* balance tests in political rents paper
+
+drop if votes==.
+* Note: drop 92 candidates that were elected in "stille Wahlen"
 
 * (vi) Keep only selected variables
 
@@ -3241,13 +3994,14 @@ rename cantonno ID_canton
 local vars ID year canton /// // e_id_sug n_id_sug 
 	  name firstname birthyear age sex job /// 
 	  votes elected pvotes votemargin votemargin_rel incumbent tenure ///
-	  list listname_bfs alliance suballiance ///
+	  list listname_bfs alliance suballiance party_left_wing party_center ///
+	  party_right_wing /// 
 	  eligible_cant voters_cant no_seats populationmun ///
 	  cand_before1931 ///
 	  ID_time ID_pers ID_canton year_min first_participation ///
 	  participation_L1 participation_F1 elected_F1 elected_L1 ///
 	  votemargin_L1 voters_cant_L1 eligible_cant_L1 ///
-	  municipalityno originno1 originno2 originno3 originno4 originno5 listpos ///
+	  municipalityno originno1 originno2 originno3 originno4 originno5 ///
 	  originno6 EDateJoining1-EDateJoining6 EDateLeaving1-EDateLeaving6
 	  
 order `vars'
@@ -3261,10 +4015,16 @@ erase "$path\02_Processed_data\08_Municipalities\Municipalities_Population_1981_
 erase "$path\02_Processed_data\nationalraete_1931_2015_temp.dta"
 erase "$path\02_Processed_data\13_Running_variable\rv_analytical_r.dta"
 
+* Prepare data for linking to 2019 and 2023 dataset
+
+use "$path\02_Processed_data\nationalraete_1931_2015.dta", replace
+duplicates drop ID name firstname birthyear sex, force
+keep ID name firstname birthyear sex
+
 /*
 
 ******************************************************
-* (M) RECORD LINKAGE CHECKS
+* (O) RECORD LINKAGE CHECKS
 ******************************************************
 
 *  (i) Checks false negatives

@@ -2,8 +2,8 @@ clear
 cap log close
 set more off	  
 
-*global path "E:\12. Cloud\Dropbox\Projekt Nationalräte\"
-global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
+global path "E:\12. Cloud\Dropbox\Projekt Nationalräte\"
+*global path "C:\Schmidlu\Dropbox\Projekt Nationalräte"
 
 *** Enrich NR Candidate data with Geo-Coordinates
 
@@ -140,7 +140,7 @@ save "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_Geo
 erase "$path\02_Processed_data\08_Municipalities\GdeNr2018_Geo_1931-2018_tmp.dta"
 erase "$path\02_Processed_data\08_Municipalities\BfS_Municipalities_Language_gdenr2018_temp.dta"
 
-* (vii) Check whether new dataset merges uniquely with ground truth
+/* (vii) Check whether new dataset merges uniquely with ground truth
 * Note: Lukas, July 2021.
 
 * (a) Prepare NR-Geo data 
@@ -168,16 +168,5 @@ br if dups2>0
 merge m:1 id_polit e_id_polit n_id_polit using "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_Geo_Nodups.dta"
 
 * Result: All ground truth entries have an entry in politician data (no entry with _merge==1)
-
-/*
-Result                           # of obs.
------------------------------------------
-not matched                        26,451
-	from master                         0  (_merge==1)
-	from using                     26,451  (_merge==2)
-
-matched                            10,100  (_merge==3)
------------------------------------------
-*/
 
 erase "$path\02_Processed_data\02_Elections_1971_2015\nationalraete_1931_2015_Geo_Nodups.dta"

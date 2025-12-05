@@ -3,6 +3,7 @@
 # except the following files
 !*.R
 !*.do
+!*.Rmd
 !.gitignore
 # and do no ignore files ending with slash = directories
 !*/

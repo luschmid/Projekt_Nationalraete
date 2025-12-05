@@ -11,8 +11,7 @@ global tempSug "C:\Users\schelkem\SugarcubeSetup_tmp\"
 *global dataRL "C:\Current\Dropbox\Record Linkage\02_Data\"
 *global tempSug "C:\SugarcubeSetup_tmp\"  
 
-mkdir "C:\Users\schelkem\SugarcubeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
-*mkdir "C:\SugarcubeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
+*mkdir "C:\Users\schelkem\SugarcubeSetup_tmp", public  // reduce traffic on dropbox: create directory for all the tmp files.
 
 
 **** Setup Sugarcube data for analyses ****
@@ -242,6 +241,33 @@ replace capital = 0.05 if capital_orig == "OISA). Vevey 10.051"
 
 sum capital, d
 
+merge m:1 CID year using "$dataNR\17_SIX\CID_year_related_SIX_1934-2003.dta"
+drop if _merge == 2
+drop _merge
+replace SIX = 0 if SIX == .
+replace SIX = 0 if SIX_min > year & SIX_min != .
+replace SIX = 0 if SIX_max < year & SIX_max != .
+replace SIX = . if year<1987
+drop SIX_min SIX_max origin
+
+* proportion of missing capital information (footnote 15, p. 11)
+preserve
+drop if CID == .
+gen cap_tmp = 1 if capital<.
+replace cap_tmp = 0 if capital==.
+tab cap_tmp
+/*
+. tab cap_tmp
+
+    cap_tmp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        524        0.18        0.18
+          1 |    288,880       99.82      100.00
+------------+-----------------------------------
+      Total |    289,404      100.00
+*/
+restore
+
 sort NRid year PID CID
 save "$dataNR\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", replace
 
@@ -253,20 +279,20 @@ use "$dataNR\10_Directors_1934_2003\RL_NR-Sugarcube_1934-2003.dta", clear
 rename NRid ID
 rename gdename municipality
 rename gdenr_2018_w municipality_num
-rename language_w language
 gen dir_year = 0
 replace dir_year = 1 if inlist(year, 1934, 1943, 1960, 1962, 1963, 1964, 1965, ///
 	1966, 1969, 1972) | year == 1975 | inrange(year, 1979, 2003) 
 	
 ** locals
-local first canton name firstname birthyear sex job elected ///
+local first canton name firstname birthyear sex job elected no_seats ///
 votemargin_rel incumbent tenure list listname_bfs cand_before1931 ///
-municipality municipality_num language dir_year ///
+party_left_wing party_center party_right_wing ///
+municipality municipality_num dir_year ///
 EDateJoining1 EDateLeaving1 EDateJoining2 EDateLeaving2 EDateJoining3 ///
 EDateLeaving3 EDateJoining4 EDateLeaving4 EDateJoining5 EDateLeaving5 ///
-EDateJoining6 EDateLeaving6
+EDateJoining6 EDateLeaving6 
 
-keep `first' ID year PID CID capital compFunct 
+keep `first' ID year PID CID capital compFunct SIX
 
 ** collapse
 gen all = 1 if CID != .
@@ -285,11 +311,13 @@ restore
 gen lrg = 1 if CID != . & capital > cap90  & capital < . 
 gen sml = 1 if CID != . & capital <= cap90  & capital < .
 gen prs = 1 if CID != . & compFunct == "president" | compFunct == "pre" | compFunct == "president/administrator"
+gen six = 1 if CID != . & SIX == 1
+drop SIX
 
-collapse (first) `first' (sum) all lrg sml prs, by(ID year PID) 
+collapse (first) `first' (sum) all lrg sml prs six, by(ID year PID) 
 collapse (first) `first' (sum) n_all_sum=all n_lrg_sum=lrg ///
-	n_sml_sum=sml n_prs_sum=prs (mean) n_all_avg=all n_lrg_avg=lrg ///
-	n_sml_avg=sml n_prs_avg=prs, by(ID year)  
+	n_sml_sum=sml n_prs_sum=prs n_six_sum=six (mean) n_all_avg=all n_lrg_avg=lrg ///
+	n_sml_avg=sml n_prs_avg=prs n_six_avg=six, by(ID year)  
 
 foreach var of varlist n_* {  
 	replace `var' = . if dir_year == 0
@@ -298,9 +326,11 @@ replace n_prs_sum = . if year < 1975
 replace n_prs_avg = . if year < 1975
 // Information on function would be available in 1934. 
 // We ignore this year to avoid composition effects for individual lags and leads.
+replace n_six_sum = . if year < 1987
+replace n_six_avg = . if year < 1987
+// SIX info is only available from 1987 onwards
 
-
-foreach var in all lrg sml prs { 
+foreach var in all lrg sml prs six { 
 	gen i_`var' = .
 	replace i_`var' = 0 if dir_year == 1 & n_`var'_sum == 0
 	replace i_`var' = 1 if dir_year == 1 & n_`var'_sum > 0 & n_`var'_sum < .
@@ -337,23 +367,27 @@ label var cand_before1931 "Candidate participated in 1925 and/or 1928 election"
 label var tenure "Number of days in office at election date"
 label var incumbent "Incumbent dummy at election date"
 label var elected "Elected"
+label var no_seats "Seats per canton"
 label var votemargin_rel "Running variable (relative vote margin)"
 label var firstname "First name of candidate"
 label var name "Surname of candidate"
 label var list "Party list"
 label var listname_bfs "Party names"
+label var party_left_wing "Left parties"
+label var party_right_wing "Right parties"
+label var party_center "Center parties"
 label var birthyear "Year of birth"
-label var sex "Male=1, Female=0"
+label var sex "Male"
 label var job "Job title"
 label var dir_year "Year available in Directory of Directors"
 label var municipality "Municipality name 2018 (residence)"
 label var municipality_num "Municipality number 2018 (residence)"
-label var language "Majority language in residence municipality"
 label var inoffice "Person is currently in National Council"
 label var i_all "At least one mandate, all companies"
 label var i_lrg "At least one mandate, large companies"
 label var i_sml "At least one mandate, small companies"
 label var i_prs "At least one mandate as president"
+label var i_six "At least one mandate in SIX company"
 label var n_all_sum "Number of mandates, all companies"
 label var n_all_avg "Avg. number of mandates, all companies"
 label var n_lrg_sum "Number of mandates, large companies"
@@ -362,6 +396,8 @@ label var n_sml_sum "Number of mandates, small companies"
 label var n_sml_avg "Avg. number of mandates, small companies"
 label var n_prs_sum "Number of mandates as president"
 label var n_prs_avg "Avg. number of mandates as president"
+label var n_six_sum "Number of mandates in SIX company"
+label var n_six_avg "Avg. number of mandates in SIX companyt"
 label var prc_lk "Precision at link-level"
 label var rcl_lk "Recall at link-level"
 label var f1_lk "F1 at link-level"

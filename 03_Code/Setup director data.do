@@ -18,10 +18,11 @@ global path "E:/12. Cloud/Dropbox/Projekt Nationalräte"
 use "$path\02_Processed_data\10_Directors_1934_2003\Politicians_Directorships_1934-2003.dta", clear
 
 merge 1:1 ID year canton name firstname birthyear sex job elected votemargin_rel ///
-	incumbent tenure list listname_bfs cand_before1931 municipality ///
-	municipality_num language using ///
+	no_seats incumbent tenure list listname_bfs cand_before1931 municipality ///
+	party_left_wing party_center party_right_wing municipality_num using ///
 	"$path\02_Processed_data\11_Directors_1994_2018\Politicians_Directorships_1994-2017.dta"
-	
+replace dir_year = 1 if year>2003
+
 * Quality checks
 * _merge == 3: 266,290 obs = 10 * 26,629
 sum year if _merge == 1 // Only years before 1994
@@ -40,9 +41,9 @@ duplicates report ID year
 drop _merge
 
 * Comparison of data sources
-foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum ///
-	n_all_avg n_lrg_avg n_sml_avg n_prs_avg ///
-	i_all i_lrg i_sml i_prs {
+foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_six_sum ///
+	n_all_avg n_lrg_avg n_sml_avg n_prs_avg n_six_avg ///
+	i_all i_lrg i_sml i_prs i_six {
 	qui pwcorr `var'_s1 `var'_s2
 	di "`var'" _col(20) %9.2f `r(rho)'
 	sum year if `var'_s1 == . & `var'_s2 != .
@@ -53,20 +54,23 @@ sum n_all_sum_s1 n_all_sum_s2 if inrange(year,1994,2003)
 sum n_lrg_sum_s1 n_lrg_sum_s2 if inrange(year,1994,2003)
 sum n_sml_sum_s1 n_sml_sum_s2 if inrange(year,1994,2003)
 sum n_prs_sum_s1 n_prs_sum_s2 if inrange(year,1994,2003)
+sum n_six_sum_s1 n_six_sum_s2 if inrange(year,1994,2003)
 
 sum n_all_avg_s1 n_all_avg_s2 if inrange(year,1994,2003)
 sum n_lrg_avg_s1 n_lrg_avg_s2 if inrange(year,1994,2003)
 sum n_sml_avg_s1 n_sml_avg_s2 if inrange(year,1994,2003)
 sum n_prs_avg_s1 n_prs_avg_s2 if inrange(year,1994,2003)
+sum n_six_avg_s1 n_six_avg_s2 if inrange(year,1994,2003)
 
 sum i_all_s1 i_all_s2 if inrange(year,1994,2003)
 sum i_lrg_s1 i_lrg_s2 if inrange(year,1994,2003)
 sum i_sml_s1 i_sml_s2 if inrange(year,1994,2003)
 sum i_prs_s1 i_prs_s2 if inrange(year,1994,2003)
+sum i_six_s1 i_six_s2 if inrange(year,1994,2003)
 
-foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum ///
-	n_all_avg n_lrg_avg n_sml_avg n_prs_avg ///
-	i_all i_lrg i_sml i_prs {
+foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_six_sum ///
+	n_all_avg n_lrg_avg n_sml_avg n_prs_avg n_six_avg ///
+	i_all i_lrg i_sml i_prs i_six {
 		gen diff_`var' = `var'_s1 - `var'_s2
 }
 
@@ -80,14 +84,14 @@ br ID year canton name firstname elected n_all_sum* if inrange(year,1994,2003)
 br ID year canton name firstname elected n_all_sum* if (ID == "LU-2003-0035" | ID == "ZH-1979-0051") & inrange(year,1994,2003)
 */
 
-foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_all_avg n_lrg_avg ///
-	n_sml_avg n_prs_avg i_all i_lrg i_sml i_prs {
+foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_six_sum n_all_avg n_lrg_avg ///
+	n_sml_avg n_prs_avg n_six_avg i_all i_lrg i_sml i_prs i_six {
 	gen `var'_c1 = `var'_s1
 	replace `var'_c1 = `var'_s2 if `var'_s1 == . & `var'_s2 != .
 }
 
-foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_all_avg n_lrg_avg ///
-	n_sml_avg n_prs_avg i_all i_lrg i_sml i_prs {
+foreach var in n_all_sum n_lrg_sum n_sml_sum n_prs_sum n_six_sum n_all_avg n_lrg_avg ///
+	n_sml_avg n_prs_avg n_six_avg i_all i_lrg i_sml i_prs i_six {
 	gen `var'_c2 = `var'_s2
 	replace `var'_c2 = `var'_s1 if `var'_s2 == . & `var'_s1 != .
 }
@@ -96,6 +100,7 @@ label var i_all_c1 "At least one mandate, all companies"
 label var i_lrg_c1 "At least one mandate, large companies"
 label var i_sml_c1 "At least one mandate, small companies"
 label var i_prs_c1 "At least one mandate as president"
+label var i_six_c1 "At least one mandate in SIX company"
 label var n_all_sum_c1 "Number of mandates, all companies"
 label var n_all_avg_c1 "Avg. number of mandates, all companies"
 label var n_lrg_sum_c1 "Number of mandates, large companies"
@@ -104,10 +109,13 @@ label var n_sml_sum_c1 "Number of mandates, small companies"
 label var n_sml_avg_c1 "Avg. number of mandates, small companies"
 label var n_prs_sum_c1 "Number of mandates as president"
 label var n_prs_avg_c1 "Avg. number of mandates as president"
+label var n_six_sum_c1 "Number of mandates in SIX company"
+label var n_six_avg_c1 "Avg. number of mandates in SIX company"
 label var i_all_c2 "At least one mandate, all companies"
 label var i_lrg_c2 "At least one mandate, large companies"
 label var i_sml_c2 "At least one mandate, small companies"
 label var i_prs_c2 "At least one mandate as president"
+label var i_six_c2 "At least one mandate in SIX company"
 label var n_all_sum_c2 "Number of mandates, all companies"
 label var n_all_avg_c2 "Avg. number of mandates, all companies"
 label var n_lrg_sum_c2 "Number of mandates, large companies"
@@ -116,6 +124,8 @@ label var n_sml_sum_c2 "Number of mandates, small companies"
 label var n_sml_avg_c2 "Avg. number of mandates, small companies"
 label var n_prs_sum_c2 "Number of mandates as president"
 label var n_prs_avg_c2 "Avg. number of mandates as president"
+label var n_six_sum_c2 "Number of mandates in SIX company"
+label var n_six_avg_c2 "Avg. number of mandates in SIX company"
 *label var prc_lk "Precision at link-level"
 *label var rcl_lk "Recall at link-level"
 *label var f1_lk "F1 at link-level"
@@ -138,6 +148,16 @@ foreach var of varlist elected votemargin_rel n_* i_* prc_* rcl_* inoffice ///
 	gen `var'_F`i' = F`i'.`var'
 }
 }
+
+replace elected_L4=0 if elected_L4==. & year!=1931 & elected!=.
+
+merge 1:1 ID year using "$path\02_Processed_data\01_Elections_1931_1975\tacit_elections.dta", gen(m_tacit)
+replace elected_L4=1 if m_tacit==3 & elected!=.
+drop if m_tacit==2 // there are none
+drop m_tacit
+*erase "$path\02_Processed_data\01_Elections_1931_1975\tacit_elections.dta"
+* Note: recode elected_L4 for candidates elected in tacit elections
+
 
 order ID_num ID-job tenure-dir_year  ///
 	elected_F8 elected_F7 elected_F6 elected_F5 elected_F4 elected_F3 elected_F2 ///
@@ -184,6 +204,14 @@ order ID_num ID-job tenure-dir_year  ///
 	n_prs_sum_c2_F4 n_prs_sum_c2_F3 n_prs_sum_c2_F2 n_prs_sum_c2_F1 n_prs_sum_c2 ///
 	n_prs_sum_c2_L1 n_prs_sum_c2_L2 n_prs_sum_c2_L3 n_prs_sum_c2_L4 ///
 	n_prs_sum_c2_L5 n_prs_sum_c2_L6 n_prs_sum_c2_L7 n_prs_sum_c2_L8 ///	
+	n_six_sum_c1_F8 n_six_sum_c1_F7 n_six_sum_c1_F6 n_six_sum_c1_F5 ///
+	n_six_sum_c1_F4 n_six_sum_c1_F3 n_six_sum_c1_F2 n_six_sum_c1_F1 n_six_sum_c1 ///
+	n_six_sum_c1_L1 n_six_sum_c1_L2 n_six_sum_c1_L3 n_six_sum_c1_L4 ///
+	n_six_sum_c1_L5 n_six_sum_c1_L6 n_six_sum_c1_L7 n_six_sum_c1_L8 ///
+	n_six_sum_c2_F8 n_six_sum_c2_F7 n_six_sum_c2_F6 n_six_sum_c2_F5 ///
+	n_six_sum_c2_F4 n_six_sum_c2_F3 n_six_sum_c2_F2 n_six_sum_c2_F1 n_six_sum_c2 ///
+	n_six_sum_c2_L1 n_six_sum_c2_L2 n_six_sum_c2_L3 n_six_sum_c2_L4 ///
+	n_six_sum_c2_L5 n_six_sum_c2_L6 n_six_sum_c2_L7 n_six_sum_c2_L8 ///	
 	n_all_avg_c1_F8 n_all_avg_c1_F7 n_all_avg_c1_F6 n_all_avg_c1_F5 ///
 	n_all_avg_c1_F4 n_all_avg_c1_F3 n_all_avg_c1_F2 n_all_avg_c1_F1 n_all_avg_c1 ///
 	n_all_avg_c1_L1 n_all_avg_c1_L2 n_all_avg_c1_L3 n_all_avg_c1_L4 ///
@@ -216,6 +244,14 @@ order ID_num ID-job tenure-dir_year  ///
 	n_prs_avg_c2_F4 n_prs_avg_c2_F3 n_prs_avg_c2_F2 n_prs_avg_c2_F1 n_prs_avg_c2 ///
 	n_prs_avg_c2_L1 n_prs_avg_c2_L2 n_prs_avg_c2_L3 n_prs_avg_c2_L4 ///
 	n_prs_avg_c2_L5 n_prs_avg_c2_L6 n_prs_avg_c2_L7 n_prs_avg_c2_L8 ///
+	n_six_avg_c1_F8 n_six_avg_c1_F7 n_six_avg_c1_F6 n_six_avg_c1_F5 ///
+	n_six_avg_c1_F4 n_six_avg_c1_F3 n_six_avg_c1_F2 n_six_avg_c1_F1 n_six_avg_c1 ///
+	n_six_avg_c1_L1 n_six_avg_c1_L2 n_six_avg_c1_L3 n_six_avg_c1_L4 ///
+	n_six_avg_c1_L5 n_six_avg_c1_L6 n_six_avg_c1_L7 n_six_avg_c1_L8 ///
+	n_six_avg_c2_F8 n_six_avg_c2_F7 n_six_avg_c2_F6 n_six_avg_c2_F5 ///
+	n_six_avg_c2_F4 n_six_avg_c2_F3 n_six_avg_c2_F2 n_six_avg_c2_F1 n_six_avg_c2 ///
+	n_six_avg_c2_L1 n_six_avg_c2_L2 n_six_avg_c2_L3 n_six_avg_c2_L4 ///
+	n_six_avg_c2_L5 n_six_avg_c2_L6 n_six_avg_c2_L7 n_six_avg_c2_L8 ///
 	i_all_c1_F8 i_all_c1_F7 i_all_c1_F6 i_all_c1_F5 i_all_c1_F4 i_all_c1_F3 ///
 	i_all_c1_F2 i_all_c1_F1 i_all_c1 i_all_c1_L1 i_all_c1_L2 i_all_c1_L3 ///
 	i_all_c1_L4 i_all_c1_L5 i_all_c1_L6 i_all_c1_L7 i_all_c1_L8 ///
@@ -240,6 +276,12 @@ order ID_num ID-job tenure-dir_year  ///
 	i_prs_c2_F8 i_prs_c2_F7 i_prs_c2_F6 i_prs_c2_F5 i_prs_c2_F4 i_prs_c2_F3 ///
 	i_prs_c2_F2 i_prs_c2_F1 i_prs_c2 i_prs_c2_L1 i_prs_c2_L2 i_prs_c2_L3 ///
 	i_prs_c2_L4 i_prs_c2_L5 i_prs_c2_L6 i_prs_c2_L7 i_prs_c2_L8 ///	
+	i_six_c1_F8 i_six_c1_F7 i_six_c1_F6 i_six_c1_F5 i_six_c1_F4 i_six_c1_F3 ///
+	i_six_c1_F2 i_six_c1_F1 i_six_c1 i_six_c1_L1 i_six_c1_L2 i_six_c1_L3 ///
+	i_six_c1_L4 i_six_c1_L5 i_six_c1_L6 i_six_c1_L7 i_six_c1_L8 ///
+	i_six_c2_F8 i_six_c2_F7 i_six_c2_F6 i_six_c2_F5 i_six_c2_F4 i_six_c2_F3 ///
+	i_six_c2_F2 i_six_c2_F1 i_six_c2 i_six_c2_L1 i_six_c2_L2 i_six_c2_L3 ///
+	i_six_c2_L4 i_six_c2_L5 i_six_c2_L6 i_six_c2_L7 i_six_c2_L8 ///	
 	n_all_sum_s1_F8 n_all_sum_s1_F7 n_all_sum_s1_F6 n_all_sum_s1_F5 ///
 	n_all_sum_s1_F4 n_all_sum_s1_F3 n_all_sum_s1_F2 n_all_sum_s1_F1 n_all_sum_s1 ///
 	n_all_sum_s1_L1 n_all_sum_s1_L2 n_all_sum_s1_L3 n_all_sum_s1_L4 ///
@@ -272,6 +314,14 @@ order ID_num ID-job tenure-dir_year  ///
 	n_prs_sum_s2_F4 n_prs_sum_s2_F3 n_prs_sum_s2_F2 n_prs_sum_s2_F1 n_prs_sum_s2 ///
 	n_prs_sum_s2_L1 n_prs_sum_s2_L2 n_prs_sum_s2_L3 n_prs_sum_s2_L4 ///
 	n_prs_sum_s2_L5 n_prs_sum_s2_L6 n_prs_sum_s2_L7 n_prs_sum_s2_L8 ///	
+	n_six_sum_s1_F8 n_six_sum_s1_F7 n_six_sum_s1_F6 n_six_sum_s1_F5 ///
+	n_six_sum_s1_F4 n_six_sum_s1_F3 n_six_sum_s1_F2 n_six_sum_s1_F1 n_six_sum_s1 ///
+	n_six_sum_s1_L1 n_six_sum_s1_L2 n_six_sum_s1_L3 n_six_sum_s1_L4 ///
+	n_six_sum_s1_L5 n_six_sum_s1_L6 n_six_sum_s1_L7 n_six_sum_s1_L8 ///
+	n_six_sum_s2_F8 n_six_sum_s2_F7 n_six_sum_s2_F6 n_six_sum_s2_F5 ///
+	n_six_sum_s2_F4 n_six_sum_s2_F3 n_six_sum_s2_F2 n_six_sum_s2_F1 n_six_sum_s2 ///
+	n_six_sum_s2_L1 n_six_sum_s2_L2 n_six_sum_s2_L3 n_six_sum_s2_L4 ///
+	n_six_sum_s2_L5 n_six_sum_s2_L6 n_six_sum_s2_L7 n_six_sum_s2_L8 ///	
 	n_all_avg_s1_F8 n_all_avg_s1_F7 n_all_avg_s1_F6 n_all_avg_s1_F5 ///
 	n_all_avg_s1_F4 n_all_avg_s1_F3 n_all_avg_s1_F2 n_all_avg_s1_F1 n_all_avg_s1 ///
 	n_all_avg_s1_L1 n_all_avg_s1_L2 n_all_avg_s1_L3 n_all_avg_s1_L4 ///
@@ -304,6 +354,14 @@ order ID_num ID-job tenure-dir_year  ///
 	n_prs_avg_s2_F4 n_prs_avg_s2_F3 n_prs_avg_s2_F2 n_prs_avg_s2_F1 n_prs_avg_s2 ///
 	n_prs_avg_s2_L1 n_prs_avg_s2_L2 n_prs_avg_s2_L3 n_prs_avg_s2_L4 ///
 	n_prs_avg_s2_L5 n_prs_avg_s2_L6 n_prs_avg_s2_L7 n_prs_avg_s2_L8 ///
+	n_six_avg_s1_F8 n_six_avg_s1_F7 n_six_avg_s1_F6 n_six_avg_s1_F5 ///
+	n_six_avg_s1_F4 n_six_avg_s1_F3 n_six_avg_s1_F2 n_six_avg_s1_F1 n_six_avg_s1 ///
+	n_six_avg_s1_L1 n_six_avg_s1_L2 n_six_avg_s1_L3 n_six_avg_s1_L4 ///
+	n_six_avg_s1_L5 n_six_avg_s1_L6 n_six_avg_s1_L7 n_six_avg_s1_L8 ///
+	n_six_avg_s2_F8 n_six_avg_s2_F7 n_six_avg_s2_F6 n_six_avg_s2_F5 ///
+	n_six_avg_s2_F4 n_six_avg_s2_F3 n_six_avg_s2_F2 n_six_avg_s2_F1 n_six_avg_s2 ///
+	n_six_avg_s2_L1 n_six_avg_s2_L2 n_six_avg_s2_L3 n_six_avg_s2_L4 ///
+	n_six_avg_s2_L5 n_six_avg_s2_L6 n_six_avg_s2_L7 n_six_avg_s2_L8 ///
 	i_all_s1_F8 i_all_s1_F7 i_all_s1_F6 i_all_s1_F5 i_all_s1_F4 i_all_s1_F3 ///
 	i_all_s1_F2 i_all_s1_F1 i_all_s1 i_all_s1_L1 i_all_s1_L2 i_all_s1_L3 ///
 	i_all_s1_L4 i_all_s1_L5 i_all_s1_L6 i_all_s1_L7 i_all_s1_L8 ///
@@ -328,6 +386,12 @@ order ID_num ID-job tenure-dir_year  ///
 	i_prs_s2_F8 i_prs_s2_F7 i_prs_s2_F6 i_prs_s2_F5 i_prs_s2_F4 i_prs_s2_F3 ///
 	i_prs_s2_F2 i_prs_s2_F1 i_prs_s2 i_prs_s2_L1 i_prs_s2_L2 i_prs_s2_L3 ///
 	i_prs_s2_L4 i_prs_s2_L5 i_prs_s2_L6 i_prs_s2_L7 i_prs_s2_L8 ///
+	i_six_s1_F8 i_six_s1_F7 i_six_s1_F6 i_six_s1_F5 i_six_s1_F4 i_six_s1_F3 ///
+	i_six_s1_F2 i_six_s1_F1 i_six_s1 i_six_s1_L1 i_six_s1_L2 i_six_s1_L3 ///
+	i_six_s1_L4 i_six_s1_L5 i_six_s1_L6 i_six_s1_L7 i_six_s1_L8 ///
+	i_six_s2_F8 i_six_s2_F7 i_six_s2_F6 i_six_s2_F5 i_six_s2_F4 i_six_s2_F3 ///
+	i_six_s2_F2 i_six_s2_F1 i_six_s2 i_six_s2_L1 i_six_s2_L2 i_six_s2_L3 ///
+	i_six_s2_L4 i_six_s2_L5 i_six_s2_L6 i_six_s2_L7 i_six_s2_L8 ///
 	prc_lk_s1_F8 prc_lk_s1_F7 prc_lk_s1_F6 prc_lk_s1_F5 prc_lk_s1_F4 ///
 	prc_lk_s1_F3 prc_lk_s1_F2 prc_lk_s1_F1 prc_lk_s1 prc_lk_s1_L1 prc_lk_s1_L2 ///
 	prc_lk_s1_L3 prc_lk_s1_L4 prc_lk_s1_L5 prc_lk_s1_L6 prc_lk_s1_L7 ///

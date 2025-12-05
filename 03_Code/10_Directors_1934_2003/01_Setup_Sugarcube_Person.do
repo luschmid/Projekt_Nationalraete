@@ -380,7 +380,7 @@ save "$path\02_Processed_data\10_Directors_1934_2003\Persons-Geo1_notmerged.dta"
 
 *** Merge geo-info on city names ***
 
-// 1) merge on PLZ -- done
+// 1) merge on PLZ 
 // 2) merge on city name & year
 //    a) original name with minimum of standardization (as done above)
 //    b) further standardize city names
@@ -17531,6 +17531,7 @@ label var gde_options "Geographical options if municipality unclear (e.g., Rüti
 order PID year ID_dupl gde_options options4a options4b options_manual titlejob firstname lastname male
 sort PID year ID_dupl gde_options
 save "$path\02_Processed_data\10_Directors_1934_2003\Sugarcube_Person_CleanName-Gender-Geo.dta", replace
+
 
 *erase "$path\02_Processed_data\10_Directors_1934_2003\pers_1934-2003_tmp3.dta"
 *erase "$path\02_Processed_data\10_Directors_1934_2003\comp_1934-2003_tmp3.dta"
